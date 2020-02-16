@@ -91,22 +91,17 @@ function findServices({ type,  local = true }, callback) {
 
     var browser = mdns.createBrowser(["http","tcp", type]);
 
-    let available = {};
-
     browser.on('serviceUp', function(service) {
         if (local && _isLocal(service)) {
-            console.log("service up: ", service);
-            available[service.name] = service;
-            callback(_formatServices(available));
+            console.log("service up: ", service.name);
+            callback({available: true, service:_formatService(service)});
         }
     });
 
     browser.on('serviceDown', function(service) {
-        service = available[service.name];
         if (local && _isLocal(service)) {
-            console.log("service down: ", service);
-            delete available[service.name];
-            callback(_formatServices(available));
+            console.log("service down: ", service.name);
+            callback({available: false, service:_formatService(service)});
         }
     });
 
@@ -144,12 +139,10 @@ const _formatService = ({name, host, port, txtRecord, type}) => {
     host = host.replace(/\.$/, "");
     return {
         url: `${type.name}://${host}:${port}`,
-        host, port, txt:txtRecord
+        host, port, txt:txtRecord,
+        name
     };
 }
-
-
-const _formatServices = available => values(available).map(_formatService);
 
 
 async function _unpublish() {

@@ -1,5 +1,6 @@
 const io = require("socket.io");
-const portfinder = require('portfinder');
+const {getPortPromise} = require('portfinder');
+const nodeCleanup = require('node-cleanup');
 
 const PORT = 4321;
 
@@ -8,18 +9,24 @@ const serverSocket = io.listen(PORT);
 let services = {};
 
 serverSocket.on('connection', async socket => {
-    const port = await portfinder.getPortPromise();
-    
-    console.log("Connection, sending available port", port, socket.id);
-    
+
+        
+    console.log("Connection from client", socket.id);
+    socket.on("getFreePort", async callback => callback(await getPortPromise()));
+        
     socket.on("publishService", serviceDescription =>{
-         services[socket.id] = serviceDescription;
+         services[serviceDescription.name] = serviceDescription;
          console.log("Received service publish", serviceDescription);
          broadcastServiceUpdate();
     })
+
+    socket.on("unpublishService", serviceDescription =>{
+        delete services[serviceDescription.name];
+        console.log("Received service publish", serviceDescription);
+        broadcastServiceUpdate();
+   })
     
 
-    socket.emit("availablePort", port);
 });
 
 function broadcastServiceUpdate() {
