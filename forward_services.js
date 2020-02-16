@@ -75,7 +75,7 @@ function exposeRemoteServices(exposerSocket) {
     exposerSocket.on("publishService", async service => {
         console.log("Got remote service announcement", service);
         if (localServices[service.name]) {
-            console.error("Found",service.name,"locally, Ignoring.");
+            console.error("Found", service.name, "locally, Ignoring.");
             return;
         }
         console.log("Checking if port reachable.");
@@ -149,9 +149,13 @@ async function serviceManager() {
 
 }
 
-// serviceManager();
-// exposeRemoteServices(exposerSocket);
-testCreateService();
+const mode = process.argv[2];
+if (mode === "manage") {
+    serviceManager();
+    exposeRemoteServices(exposerSocket);
+}
+else
+    testCreateService();
 // const browser = findServices({type:"testservice2"}, (services) => {
 //     // console.log("Exposing",services);
 //     // console.log("known services", browser.services);
