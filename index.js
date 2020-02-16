@@ -25,11 +25,9 @@ nodeCleanup(_unpublish);
  * @param  {} serviceDescription.type The service type. This is used for discovery.
  * @param  {} serviceDescription.txt Additional metadata to pass in the DNS TXT field
  */
-async function prepareService({type, name = null, isUnique = true, host = localHost}) {
-    const port = await portfinder.getPortPromise();
+async function prepareServicePublisher({type, name = null, isUnique = true, host = localHost, port=null}) {
     let intervalHandle =null;
     let advertisement = null;
-
 
     if (name === null)
         name = `${type}`;
@@ -52,9 +50,10 @@ async function prepareService({type, name = null, isUnique = true, host = localH
             console.log("Stopping existing advertisement");
             advertisement.stop();
         }
+        console.log("Starting new advertisement");
         advertisement = mdns.createAdvertisement(["http","tcp", type], port,{ name, txtRecord: txt, host});
         advertisement.start();
-        console.log("Starting new advertisement");
+
 
         if (intervalHandle)
             clearInterval(intervalHandle);
@@ -76,7 +75,7 @@ async function prepareService({type, name = null, isUnique = true, host = localH
     }
 
     unpublishers.push(unpublish);
-    return { publish, port, unpublish };
+    return { publish, unpublish };
 }
 
 /**
@@ -90,19 +89,21 @@ async function prepareService({type, name = null, isUnique = true, host = localH
 function findServices({ type,  local = true }, callback) {
 
     var browser = mdns.createBrowser(["http","tcp", type]);
-
+    let services= {};
     browser.on('serviceUp', function(service) {
         if (local && _isLocal(service)) {
             console.log("service up: ", service.name);
+            services[service.name] = service;
             callback({available: true, service:_formatService(service)});
         }
     });
 
     browser.on('serviceDown', function(service) {
-        if (local && _isLocal(service)) {
-            console.log("service down: ", service.name);
-            callback({available: false, service:_formatService(service)});
-        }
+        console.log("serviceDown",service);
+ 
+        console.log("service down: ", service.name);
+        callback({available: false, service:_formatService(services[service.name] ||  service)});
+    
     });
 
     browser.start();
@@ -132,15 +133,16 @@ const _isLocal = service => service.host.startsWith(localHost);
 
 
 
-module.exports = { prepareService, findServices, findServiceOnce };
+module.exports = { prepareServicePublisher, findServices, findServiceOnce };
 
 
 const _formatService = ({name, host, port, txtRecord, type}) => { 
-    host = host.replace(/\.$/, "");
+    host = host && host.replace(/\.$/, "");
     return {
         url: `${type.name}://${host}:${port}`,
         host, port, txt:txtRecord,
-        name
+        name,
+        type
     };
 }
 

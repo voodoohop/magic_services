@@ -5,17 +5,14 @@ const { homedir } = require("os");
 const path = require("path");
 const nodeCleanup = require('node-cleanup');
 const isPortReachable = require('is-port-reachable');
+const portfinder = require('portfinder');
 
-const { map, scan, now, run, runEffects, filter, mergeArray, fromPromise, join,constant,take,
-        debounce, skipRepeatsWith, switchLatest, tap, awaitPromises, multicast, zip,withItems,
-        combine, skipRepeats, throttle, periodic, never, startWith, combineArray, skip, chain } = require('@most/core');
 
-const { newDefaultScheduler } = require('@most/scheduler');
-const { createAdapter } = require("@most/adapter");
+
 const { difference, differenceBy} = require("lodash");
 const { drain,streamify, pipe,pipe2, log$, fromArray$ ,notNull} = require("./helpers");
 
-const { findServices, prepareService, findServiceOnce } = require("./index");
+const { findServices, prepareServicePublisher, findServiceOnce } = require("./index");
 
 
 const GATEWAY_HOST = 'localhost';
@@ -56,7 +53,7 @@ async function reverseSSH(localPort) {
     });
 }
 
-async function exposeService(service) {
+async function exposeLocalService(service) {
     const { remotePort, host, dispose } = await reverseSSH(service.port);
     // const remotePort=21312;
     const proxiedService = {...service, host: REVERSE_SSH_HOST, port: remotePort };
@@ -71,11 +68,38 @@ async function exposeService(service) {
     };
 }
 
+
+function exposeRemoteServices(exposerSocket) {
+    let available={};
+  exposerSocket.on("publishService", async service => {
+      console.log("Got remote service announcement",service);
+    console.log("Checking if port reachable.");
+    const reachable = await isPortReachable(service.port,{host: service.host});
+    if (!reachable) {
+        console.error("service was not reachable. ignoring.", service);
+    }
+    let publisher = available[service.name] || await prepareServicePublisher({type:"testservice2", name: service.name+"_remote", isUnique:false, host:service.host, port:service.port});
+    available[service.name] = publisher;
+    console.log(publisher);
+    const {publish} = publisher;
+    console.log("Exposing remote service",service);
+    publish({txt: service.txt});
+  });
+  exposerSocket.on("unpublishService", service => {
+    if (!available[service.name]) {
+        console.error("Received unpublish, but had not tracked any published services of that name.",service);
+        return;
+    }
+     available[service.name].unpublish();
+  });
+}
+
 const http = require('http');
 
 async function testCreateService() {
-    const { port, publish, unpublish } = await prepareService({ type: "testservice2" });
-    console.log({ port });
+    const port = await portfinder.getPortPromise();
+    const { publish, unpublish } = await prepareServicePublisher({ type: "testservice2", port});
+
     http.createServer(function (request, res) {
         res.writeHead(200); res.end('Hello World\n');
     }).listen(port);
@@ -85,63 +109,39 @@ async function testCreateService() {
 }
 
 
-const getDiff = (previous,next) => ({added: differenceBy(next, previous, JSON.stringify), removed: differenceBy(previous,next, JSON.stringify)});
-const getSequentialDiff$ = services$ => zip(getDiff, startWith([],services$), services$)
-console.log("Wutg",withItems);
-
 
 
 async function serviceManager() {
-    // await testCreateService();
     
+    let disposers  = {};
 
-    findServices({ type: "testservice2" }, );
+    findServices({ type: "testservice2" }, async ({available, service}) => {
+      if (available) {
+        let removed = false;
+        disposers[service.name] = () => { removed = true };
 
-    const diff$ = pipe2(services$,
-        debounce(SERVICE_UPDATE_DEBOUNCE_TIME),
-        log$("services"),
-        multicast, 
-        getSequentialDiff$);
+        console.log("Got avalaible service announcement.",service);
+        console.log("Checking if port reachable.");
 
+        const reachable = await isPortReachable(service.port,{host: service.host});
+        if (!reachable) {
+            console.log("Port not reachable. Ignoring.");
+            return;
+        }
+        console.log("Exposing service", service);
+        disposers[service.name] = await exposeLocalService(service);
+        if (removed)
+          disposers[service.name]();
+      } else {
+        console.log("Got service down announcement", service,"Calling disposer.");
+        disposers[service.name] && disposers[service.name]();
+      }
+    });
 
-    
-    const added$ = pipe2(diff$, 
-        chain(({added}) => fromArray$(added)),
-        map(async service => {
-          const reachable = await isPortReachable(service.port,{host: service.host});
-          console.log("Service",service,"is reachable:",true);
-          return reachable ? service : null;
-        }),
-        awaitPromises,
-        filter(notNull)
-        );
-
-    const removed$ = multicast(chain(({removed}) => fromArray$(removed),diff$));
-
-    
-    const exposed_disposers$ = pipe2(added$, map(exposeService), awaitPromises);
- 
-    const disposeRequests =  join(zip((service, disposer) => 
-        pipe2(removed$, 
-          filter(removedService  => removedService === service),
-          constant(disposer),
-          take(1)
-        )
-        ,added$, exposed_disposers$));
-    // fromPromise()
-    drain(tap(dispose => {
-        console.log("disposing");
-        dispose();
-    }, disposeRequests));
-
-    // drain(tap( ,exposed_disposers$));
-
-    drain(log$("serviceDiff")(diff$));
-    // drain(log$("serviceExposed")(exposed$));
-    // drain(log$("itemTest")(withItems([1,2,3], repeat(now())));
 }
 
-// test();
+// serviceManager();
+// exposeRemoteServices(exposerSocket);
 testCreateService();
 // const browser = findServices({type:"testservice2"}, (services) => {
 //     // console.log("Exposing",services);
