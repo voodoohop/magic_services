@@ -94,7 +94,7 @@ function findServices({ type,  local = true }, callback) {
         if (local && _isLocal(service)) {
             console.log("service up: ", service.name);
             services[service.name] = service;
-            callback({available: true, service:_formatService(service)});
+            callback({available: true, service:_formatService(service)},services);
         }
     });
 
@@ -102,7 +102,7 @@ function findServices({ type,  local = true }, callback) {
         console.log("serviceDown",service);
  
         console.log("service down: ", service.name);
-        callback({available: false, service:_formatService(services[service.name] ||  service)});
+        callback({available: false, service:_formatService(services[service.name] ||  service)}, services);
     
     });
 

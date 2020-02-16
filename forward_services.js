@@ -6,11 +6,11 @@ const path = require("path");
 const nodeCleanup = require('node-cleanup');
 const isPortReachable = require('is-port-reachable');
 const portfinder = require('portfinder');
+const sleep = require('sleep-async')().Promise;
 
 
+const { difference, differenceBy } = require("lodash");
 
-const { difference, differenceBy} = require("lodash");
-const { drain,streamify, pipe,pipe2, log$, fromArray$ ,notNull} = require("./helpers");
 
 const { findServices, prepareServicePublisher, findServiceOnce } = require("./index");
 
@@ -47,7 +47,7 @@ async function reverseSSH(localPort) {
             .on('connect', connection => {
                 console.log('Tunnel established on port ' + connection.localPort);
                 console.log('pid: ' + connection.pid);
-                resolve({remotePort: connection.remotePort, host: REVERSE_SSH_HOST, dispose: autoSSHClient.kill });
+                resolve({ remotePort: connection.remotePort, host: REVERSE_SSH_HOST, dispose: autoSSHClient.kill });
             });
         nodeCleanup(() => autoSSHClient.kill());
     });
@@ -56,9 +56,10 @@ async function reverseSSH(localPort) {
 async function exposeLocalService(service) {
     const { remotePort, host, dispose } = await reverseSSH(service.port);
     // const remotePort=21312;
-    const proxiedService = {...service, host: REVERSE_SSH_HOST, port: remotePort };
+    const proxiedService = { ...service, host: REVERSE_SSH_HOST, port: remotePort };
 
     console.log(`Local service at ${service.host}:${service.port} now available at ${host}:${remotePort}.`);
+    await sleep.sleep(1000);
     exposerSocket.emit("publishService", proxiedService);
     return () => {
         console.log("Disposing of exposed service", proxiedService);
@@ -70,35 +71,40 @@ async function exposeLocalService(service) {
 
 
 function exposeRemoteServices(exposerSocket) {
-    let available={};
-  exposerSocket.on("publishService", async service => {
-      console.log("Got remote service announcement",service);
-    console.log("Checking if port reachable.");
-    const reachable = await isPortReachable(service.port,{host: service.host});
-    if (!reachable) {
-        console.error("service was not reachable. ignoring.", service);
-    }
-    let publisher = available[service.name] || await prepareServicePublisher({type:"testservice2", name: service.name+"_remote", isUnique:false, host:service.host, port:service.port});
-    available[service.name] = publisher;
-    console.log(publisher);
-    const {publish} = publisher;
-    console.log("Exposing remote service",service);
-    publish({txt: service.txt});
-  });
-  exposerSocket.on("unpublishService", service => {
-    if (!available[service.name]) {
-        console.error("Received unpublish, but had not tracked any published services of that name.",service);
-        return;
-    }
-     available[service.name].unpublish();
-  });
+    let available = {};
+    exposerSocket.on("publishService", async service => {
+        console.log("Got remote service announcement", service);
+        if (localServices[service.name]) {
+            console.error("Found",service.name,"locally, Ignoring.");
+            return;
+        }
+        console.log("Checking if port reachable.");
+        const reachable = await isPortReachable(service.port, { host: service.host });
+        if (!reachable) {
+            console.error("service was not reachable. ignoring.", service);
+            return;
+        }
+        let publisher = available[service.name] || await prepareServicePublisher({ type: "testservice2", name: service.name + "_remote", isUnique: false, host: service.host, port: service.port });
+        available[service.name] = publisher;
+        console.log(publisher);
+        const { publish } = publisher;
+        console.log("Exposing remote service", service);
+        publish({ txt: service.txt });
+    });
+    exposerSocket.on("unpublishService", service => {
+        if (!available[service.name]) {
+            console.error("Received unpublish, but had not tracked any published services of that name.", service);
+            return;
+        }
+        available[service.name].unpublish();
+    });
 }
 
 const http = require('http');
 
 async function testCreateService() {
     const port = await portfinder.getPortPromise();
-    const { publish, unpublish } = await prepareServicePublisher({ type: "testservice2", port});
+    const { publish, unpublish } = await prepareServicePublisher({ type: "testservice2", port });
 
     http.createServer(function (request, res) {
         res.writeHead(200); res.end('Hello World\n');
@@ -109,33 +115,36 @@ async function testCreateService() {
 }
 
 
-
+let localServices = {};
 
 async function serviceManager() {
-    
-    let disposers  = {};
 
-    findServices({ type: "testservice2" }, async ({available, service}) => {
-      if (available) {
-        let removed = false;
-        disposers[service.name] = () => { removed = true };
+    let disposers = {};
 
-        console.log("Got avalaible service announcement.",service);
-        console.log("Checking if port reachable.");
+    findServices({ type: "testservice2" }, async ({ available, service }, services) => {
+        // this is a kind of ugly way of telling exposeRemoteServices which local services don't need to be duplicated
+        localServices = services;
 
-        const reachable = await isPortReachable(service.port,{host: service.host});
-        if (!reachable) {
-            console.log("Port not reachable. Ignoring.");
-            return;
+        if (available) {
+            let removed = false;
+            disposers[service.name] = () => { removed = true };
+
+            console.log("Got avalaible service announcement.", service);
+            console.log("Checking if port reachable.");
+
+            const reachable = await isPortReachable(service.port, { host: service.host });
+            if (!reachable) {
+                console.log("Port not reachable. Ignoring.");
+                return;
+            }
+            console.log("Exposing service", service);
+            disposers[service.name] = await exposeLocalService(service);
+            if (removed)
+                disposers[service.name]();
+        } else {
+            console.log("Got service down announcement", service, "Calling disposer.");
+            disposers[service.name] && disposers[service.name]();
         }
-        console.log("Exposing service", service);
-        disposers[service.name] = await exposeLocalService(service);
-        if (removed)
-          disposers[service.name]();
-      } else {
-        console.log("Got service down announcement", service,"Calling disposer.");
-        disposers[service.name] && disposers[service.name]();
-      }
     });
 
 }
