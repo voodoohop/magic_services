@@ -19,8 +19,10 @@
   "dependencies": {
     "autossh": "^0.2.0",
     "bonjour": "^3.5.0",
+    "mdns": "^2.5.1",
     "node-cleanup": "^2.1.2",
     "portfinder": "^1.0.25",
-    "socket.io": "^2.3.0"
+    "socket.io": "^2.3.0",
+    "socket.io-client": "^2.3.0"
   }
 }

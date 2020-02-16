@@ -3,13 +3,19 @@ const portfinder = require('portfinder');
 const nodeCleanup = require('node-cleanup');
 const os = require("os");
 const bonjour = require('bonjour')();
+const mdns = require("mdns");
 
+const {values} = Object;
 // 1 hour default time-to-live
 const DEFAULT_TTL = 60 * 60 * 1000;
 
-const host = os.hostname();
+const localHost = os.hostname();
+
+console.log("Local host name", localHost);
+const unpublishers = [];
 
 nodeCleanup(_unpublish);
+
 
 /**
  * Find a free port and set up automatic broadcasting via bonjour
@@ -19,37 +25,58 @@ nodeCleanup(_unpublish);
  * @param  {} serviceDescription.type The service type. This is used for discovery.
  * @param  {} serviceDescription.txt Additional metadata to pass in the DNS TXT field
  */
-async function prepareService() {
+async function prepareService({type, name = null, isUnique = true, host = localHost}) {
     const port = await portfinder.getPortPromise();
-    let intervalHandle = -1;
-    let alreadyPublished = false;
+    let intervalHandle =null;
+    let advertisement = null;
 
-    const publish = async ({ type, txt, name = null, isUnique = true }) => {
-        if (name === null)
-            name = `${type}`;
-        if (isUnique)
-            name = `${name}_${process.pid}`;
 
-        const publishParams = { name, type, port, host, txt };
+    if (name === null)
+        name = `${type}`;
+    if (isUnique)
+        name = `${name}_${process.pid}`;
 
-        if (alreadyPublished)
-            await _unpublish();
 
-        console.log("Publishing", publishParams);
-        bonjour.publish(publishParams);
-        alreadyPublished = true;
+    const publish = async ({ txt={} } ) => {
 
-        if (intervalHandle > 0)
+        // const publishParams = { name, type, port,  txt };
+
+        if (advertisement) {
+            console.log("Stopping existing advertisement.");
+            advertisement.stop();
+        }
+
+        console.log("Publishing", type, name, port, txt);
+
+        if (advertisement) {
+            console.log("Stopping existing advertisement");
+            advertisement.stop();
+        }
+        advertisement = mdns.createAdvertisement(["http","tcp", type], port,{ name, txtRecord: txt, host});
+        advertisement.start();
+        console.log("Starting new advertisement");
+
+        if (intervalHandle)
             clearInterval(intervalHandle);
 
+        // Re-publish repeatedly
         intervalHandle = setInterval(async () => {
             console.log("Republishing service.");
-            await _unpublish();
-            bonjour.publish(publishParams);
+            await publish(txt);
         }, DEFAULT_TTL);
+
     }
 
-    return { publish, port };
+    const unpublish = () => {
+        console.log("Unpublishing service", name);
+        if (advertisement) {
+            advertisement.stop();
+            advertisement = null;
+        }
+    }
+
+    unpublishers.push(unpublish);
+    return { publish, port, unpublish };
 }
 
 /**
@@ -60,38 +87,77 @@ async function prepareService() {
  * @param  {boolean} options.local=true Whether to look only on the local host for services
  * @param  {func} callback Callback which is called any time a new service is found that satistfies the query
  */
-function findService({ type, txt, local = true }, callback) {
+function findServices({ type,  local = true }, callback) {
 
-    if (local)
-        callback = _filterLocal(callback);
+    var browser = mdns.createBrowser(["http","tcp", type]);
 
-    bonjour.find({ type, txt }, callback);
+    let available = {};
+
+    browser.on('serviceUp', function(service) {
+        if (local && _isLocal(service)) {
+            console.log("service up: ", service);
+            available[service.name] = service;
+            callback(_formatServices(available));
+        }
+    });
+
+    browser.on('serviceDown', function(service) {
+        service = available[service.name];
+        if (local && _isLocal(service)) {
+            console.log("service down: ", service);
+            delete available[service.name];
+            callback(_formatServices(available));
+        }
+    });
+
+    browser.start();
+
+    return browser.stop;
 }
+
 
 /**
  * Same as findService but returns a promise that resolves as soon as a service is found that meets the requirements
  * @param  {} options
  */
 function findServiceOnce(options) {
-    return new Promise(resolver => findService(options, resolver));
+    return new Promise(resolve => {
+        const stop = findServices(options, services => {
+            if (services.length > 0) {
+                stop();
+                resolve(services[0]);
+            }
+        })
+    });
 }
 
 
-const _filterLocal = callback => service => {
-    if (service.host === host)
-        callback(service);
+const _isLocal = service => service.host.startsWith(localHost);
+
+
+
+
+module.exports = { prepareService, findServices, findServiceOnce };
+
+
+const _formatService = ({name, host, port, txtRecord, type}) => { 
+    host = host.replace(/\.$/, "");
+    return {
+        url: `${type.name}://${host}:${port}`,
+        host, port, txt:txtRecord
+    };
 }
+
+
+const _formatServices = available => values(available).map(_formatService);
 
 
 async function _unpublish() {
     console.log("unpublishing");
     try {
-        await new Promise(resolve => bonjour.unpublishAll(resolve));
+        unpublishers.forEach(u => u());
     } catch (e) {
         console.error("Couldn't unpublish but continuing.");
         console.error(e);
     }
 }
-
-
-module.exports = { prepareService, findService, findServiceOnce };
