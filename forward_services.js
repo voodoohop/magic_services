@@ -15,7 +15,7 @@ const { difference, differenceBy } = require("lodash");
 const { findServices, prepareServicePublisher, findServiceOnce } = require("./index");
 
 
-const GATEWAY_HOST = 'localhost';
+const GATEWAY_HOST = "ec2-18-185-70-234.eu-central-1.compute.amazonaws.com";
 const GATEWAY_PORT = 4321;
 
 const REVERSE_SSH_HOST = "ec2-18-185-70-234.eu-central-1.compute.amazonaws.com";

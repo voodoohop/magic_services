@@ -54,6 +54,7 @@ serverSocket.on('connection', async socket => {
 });
 
 function broadcastServiceUpdate() {
+    // FIXME: should not emit to originator
     serverSocket.sockets.emit("services", services);
 }
 
