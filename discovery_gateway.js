@@ -57,9 +57,3 @@ function broadcastServiceUpdate() {
     // FIXME: should not emit to originator
     serverSocket.sockets.emit("services", services);
 }
-
-
-//   remote_port = 5000 + int(training_run_id)
-//   script_path = os.path.dirname(os.path.abspath(__file__))
-
-//   ssh_command = f"{script_path}/reverse_ssh.sh {params.model_server_port} {remote_port} &"

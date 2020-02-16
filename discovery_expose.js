@@ -9,10 +9,7 @@ const portfinder = require('portfinder');
 const sleep = require('sleep-async')().Promise;
 
 
-const { difference, differenceBy } = require("lodash");
-
-
-const { findServices, prepareServicePublisher, findServiceOnce } = require("./index");
+const { findServices, prepareServicePublisher, findServiceOnce } = require("./discovery");
 
 
 const GATEWAY_HOST = "ec2-18-185-70-234.eu-central-1.compute.amazonaws.com";
@@ -21,8 +18,6 @@ const GATEWAY_PORT = 4321;
 const REVERSE_SSH_HOST = "ec2-18-185-70-234.eu-central-1.compute.amazonaws.com";
 const REVERSE_SSH_USERNAME = "ubuntu";
 const REVERSE_SSH_KEYFILE = path.join(homedir(), "credentials", "ec2_model_supervisor_key.pem");
-
-const SERVICE_UPDATE_DEBOUNCE_TIME = 1000;
 
 const exposerSocket = io(`http://${GATEWAY_HOST}:${GATEWAY_PORT}`);
 
@@ -84,7 +79,7 @@ function exposeRemoteServices(exposerSocket) {
             console.error("service was not reachable. ignoring.", service);
             return;
         }
-        let publisher = available[service.name] || await prepareServicePublisher({ type: "testservice2", name: service.name + "_remote", isUnique: false, host: service.host, port: service.port });
+        let publisher = available[service.name] || await prepareServicePublisher({ type: service.type, name: service.name + "_remote", isUnique: false, host: service.host, port: service.port });
         available[service.name] = publisher;
         console.log(publisher);
         const { publish } = publisher;
@@ -104,13 +99,13 @@ const http = require('http');
 
 async function testCreateService() {
     const port = await portfinder.getPortPromise();
-    const { publish, unpublish } = await prepareServicePublisher({ type: "testservice2", port });
+    const { publish, unpublish } = await prepareServicePublisher({ type: "testtype", port });
 
     http.createServer(function (request, res) {
         res.writeHead(200); res.end('Hello World\n');
     }).listen(port);
 
-    await publish({ txt: { expose: true } });
+    await publish({ txt: {exta: "bla"} });
     // setTimeout(unpublish, 7000);
 }
 
@@ -121,7 +116,7 @@ async function serviceManager() {
 
     let disposers = {};
 
-    findServices({ type: "testservice2" }, async ({ available, service }, services) => {
+    findServices({ type: "testtype" }, async ({ available, service }, services) => {
         // this is a kind of ugly way of telling exposeRemoteServices which local services don't need to be duplicated
         localServices = services;
 
@@ -156,8 +151,3 @@ if (mode === "manage") {
 }
 else
     testCreateService();
-// const browser = findServices({type:"testservice2"}, (services) => {
-//     // console.log("Exposing",services);
-//     // console.log("known services", browser.services);
-// });
-

@@ -8,6 +8,7 @@ const mdns = require("mdns");
 const {values} = Object;
 // 1 hour default time-to-live
 const DEFAULT_TTL = 60 * 60 * 1000;
+const MAESTRON_SERVICE_TYPE = "bakeryservice";
 
 const localHost = os.hostname();
 
@@ -15,6 +16,7 @@ console.log("Local host name", localHost);
 const unpublishers = [];
 
 nodeCleanup(_unpublish);
+
 
 
 /**
@@ -39,6 +41,8 @@ async function prepareServicePublisher({type, name = null, isUnique = true, host
 
         // const publishParams = { name, type, port,  txt };
 
+        txt = {...txt, type};
+
         if (advertisement) {
             console.log("Stopping existing advertisement.");
             advertisement.stop();
@@ -50,8 +54,8 @@ async function prepareServicePublisher({type, name = null, isUnique = true, host
             console.log("Stopping existing advertisement");
             advertisement.stop();
         }
-        console.log("Starting new advertisement");
-        advertisement = mdns.createAdvertisement(["http","tcp", type], port,{ name, txtRecord: txt, host});
+        console.log("Starting new advertisement with type", type);
+        advertisement = mdns.createAdvertisement(["http","tcp", MAESTRON_SERVICE_TYPE], port,{ name, txtRecord: txt, host});
         advertisement.start();
 
 
@@ -86,24 +90,31 @@ async function prepareServicePublisher({type, name = null, isUnique = true, host
  * @param  {boolean} options.local=true Whether to look only on the local host for services
  * @param  {func} callback Callback which is called any time a new service is found that satistfies the query
  */
-function findServices({ type,  local = true }, callback) {
+function findServices({ type,  local = false }, callback) {
 
-    var browser = mdns.createBrowser(["http","tcp", type]);
+    var browser = mdns.createBrowser(["http","tcp", MAESTRON_SERVICE_TYPE]);
     let services= {};
     browser.on('serviceUp', function(service) {
-        if (local && _isLocal(service)) {
-            console.log("service up: ", service.name);
-            services[service.name] = service;
-            callback({available: true, service:_formatService(service)},services);
-        }
+        if (local && !_isLocal(service))
+          return;
+        if (! (service.txtRecord.type === type)) 
+            return;
+        
+        console.log("service up: ", service.name);
+        services[service.name] = service;
+        callback({available: true, service:_formatService(service)},services);
+        
     });
 
     browser.on('serviceDown', function(service) {
+        
         console.log("serviceDown",service);
- 
-        console.log("service down: ", service.name);
-        callback({available: false, service:_formatService(services[service.name] ||  service)}, services);
-    
+        const formatted = _formatService(services[service.name] ||  service);
+        if (!(formatted.type === type))
+          return;
+        console.log("service down: ", formatted.name);
+        callback({available: false, service: formatted}, services);
+        
     });
 
     browser.start();
@@ -136,13 +147,13 @@ const _isLocal = service => service.host.startsWith(localHost);
 module.exports = { prepareServicePublisher, findServices, findServiceOnce };
 
 
-const _formatService = ({name, host, port, txtRecord, type}) => { 
+const _formatService = ({name, host, port, txtRecord}) => { 
     host = host && host.replace(/\.$/, "");
     return {
-        url: `${type.name}://${host}:${port}`,
+        url: `${name}://${host}:${port}`,
         host, port, txt:txtRecord,
         name,
-        type
+        type: (txtRecord && txtRecord.type) || undefined
     };
 }
 
@@ -156,3 +167,5 @@ async function _unpublish() {
         console.error(e);
     }
 }
+
+findServices({type:"testtype"}, found => console.log("foound",found))
