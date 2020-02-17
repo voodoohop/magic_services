@@ -52,7 +52,7 @@ async function publishService({type, name = null, isUnique = true, host = localH
     advertisement.start();
 
     // Re-publish repeatedly
-    intervalHandle = setInterval(async () => {
+    const intervalHandle = setInterval(async () => {
         console.log("Republishing service.");
         await publish(txt);
     }, DEFAULT_TTL);
@@ -61,6 +61,7 @@ async function publishService({type, name = null, isUnique = true, host = localH
     const unpublish = () => {
         console.log("Unpublishing service", name);
         advertisement.stop();
+        clearInterval(intervalHandle);
     }
 
     unpublishers.push(unpublish);
