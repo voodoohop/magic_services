@@ -8,7 +8,7 @@ const isPortReachable = require('is-port-reachable');
 const portfinder = require('portfinder');
 const http = require('http');
 
-const { publishService } = require("./discovery");
+const { publishService } = require("./index");
 
 
 async function testCreateService() {
