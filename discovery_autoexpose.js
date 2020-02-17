@@ -51,7 +51,7 @@ async function reverseSSH(localPort) {
 async function exposeLocalService(service) {
     const { remotePort, host, dispose } = await reverseSSH(service.port);
     // const remotePort=21312;
-    const proxiedService = { ...service, host: REVERSE_SSH_HOST, port: remotePort };
+    const proxiedService = { ...service,txt:{...service.txt, origin: {host:service.host, port: service.port}} ,host: REVERSE_SSH_HOST, port: remotePort, url:`http://${REVERSE_SSH_HOST}:${remotePort}`};
 
     console.log(`Local service at ${service.host}:${service.port} now available at ${host}:${remotePort}.`);
     await sleep.sleep(1000);
@@ -110,7 +110,7 @@ async function serviceManager() {
         // forward i
         if (available) {
             if (service.location === "remote") {
-                console.log(`${service.name} is tunneled remotely. We don't need to expose it again.`);
+                console.log(`${service.name}" is tunneled remotely. We don't need to expose it again.`);
                 return;
             }
             let removed = false;
@@ -119,7 +119,7 @@ async function serviceManager() {
             console.log("Got avalaible service announcement.", service);
             console.log(`Checking if port "${service.port}" is reachable.`);
 
-            const reachable = await isPortReachable(service.port, { host: service.host });
+            const reachable = await isPortReachable(service.port, { host: service.host, timeout:10000 });
             if (!reachable) {
                 console.log("Port not reachable. Ignoring.");
                 return;

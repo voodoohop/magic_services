@@ -20,6 +20,7 @@
     "autossh": "^0.2.0",
     "bonjour": "^3.5.0",
     "is-port-reachable": "^3.0.0",
+    "is-reachable": "^4.0.0",
     "mdns": "^2.5.1",
     "node-cleanup": "^2.1.2",
     "portfinder": "^1.0.25",

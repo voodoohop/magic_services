@@ -54,6 +54,7 @@ async function prepareServicePublisher({type, name = null, isUnique = true, host
             advertisement.stop();
         }
         console.log("Starting new advertisement with type", type);
+        //advertisement = bonjour.publish({name, type:MAESTRON_SERVICE_TYPE, port, txt: {type}})// 
         advertisement = mdns.createAdvertisement(["http","tcp", MAESTRON_SERVICE_TYPE], port,{ name, txtRecord: txt, host});
         advertisement.start();
 
@@ -100,7 +101,7 @@ function findServices({ type,  local = false }, callback) {
         if (type && !(service.txtRecord.type === type)) 
             return;
         
-        console.log("service up: ", service.name);
+        console.log("service up: ", service);
         services[service.name] = service;
         callback({available: true, service:_formatService(service)},services);
         
@@ -109,7 +110,7 @@ function findServices({ type,  local = false }, callback) {
     browser.on('serviceDown', function(service) {
         
         console.log("serviceDown",service);
-        const formatted = _formatService(services[service.name] ||  service);
+        const formatted = _formatService(services[service.name] ||  _formatSevice(service));
         if (!(formatted.type === type))
           return;
         console.log("service down: ", formatted.name);
@@ -148,7 +149,7 @@ module.exports = { prepareServicePublisher, findServices, findServiceOnce };
 
 
 const _formatService = ({name, host, port, txtRecord}) => { 
-    host = host && host.replace(/\.$/, "");
+    host = host && host.replace(/\.$/, "").replace(".fritz.box",".local");
     return {
         url: `http://${host}:${port}`,
         host, port, txt:txtRecord,

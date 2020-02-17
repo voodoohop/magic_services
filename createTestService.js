@@ -19,7 +19,7 @@ async function testCreateService() {
         res.writeHead(200); res.end('Hello World\n');
     }).listen(port);
 
-    await publish({ txt: { expose: true } });
+    await publish({ txt: { some_metadata: "bla" } });
     // setTimeout(unpublish, 7000);
 }
 
