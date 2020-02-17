@@ -84,7 +84,7 @@ function exposeRemoteServices(exposerSocket) {
         console.log(publisher);
         const { publish } = publisher;
         console.log("Exposing remote service", service);
-        publish({ txt: service.txt });
+        publish({ txt: {...service.txt, location:"remote" }});
     });
     exposerSocket.on("unpublishService", service => {
         if (!available[service.name]) {
@@ -107,12 +107,17 @@ async function serviceManager() {
         // this is a kind of ugly way of telling exposeRemoteServices which local services don't need to be duplicated
         localServices = services;
 
+        // forward i
         if (available) {
+            if (service.remote) {
+                console.log(`${service.name} is tunneled remotely. We don't need to expose it again.`);
+                return;
+            }
             let removed = false;
             disposers[service.name] = () => { removed = true };
 
             console.log("Got avalaible service announcement.", service);
-            console.log("Checking if port reachable.");
+            console.log(`Checking if port "${service.port}" is reachable.`);
 
             const reachable = await isPortReachable(service.port, { host: service.host });
             if (!reachable) {
