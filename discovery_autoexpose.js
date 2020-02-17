@@ -84,7 +84,7 @@ function exposeRemoteServices(exposerSocket) {
         if (availableUnpublishers[service.name])
           availableUnpublishers[service.name]();
         
-        const unpublisher = await prepareServicePublisher({ 
+        const unpublisher = await publishService({ 
             type: service.type, 
             name: service.name + "_remote", 
             isUnique: false, 

@@ -34,7 +34,7 @@ app.get('/whoami.json', function (req, res) {
   });
 });
 
-bonjour().find(function (service) {
+bonjour().find({},function (service) {
   console.log("found service",service);
   wss.clients.forEach(function (client) {
     console.log('publish_new_service');
