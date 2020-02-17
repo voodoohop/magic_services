@@ -11,6 +11,7 @@ const sleep = require('sleep-async')().Promise;
 
 const { findServices, prepareServicePublisher } = require("./discovery");
 
+const {values} = Object;
 
 const GATEWAY_HOST = "ec2-18-185-70-234.eu-central-1.compute.amazonaws.com";
 const GATEWAY_PORT = 4321;
@@ -93,7 +94,15 @@ function exposeRemoteServices(exposerSocket) {
             return;
         }
         available[service.name].unpublish();
+        delete availabe[service.name];
     });
+    nodeCleanup(() => { 
+        console.log("Cleaning up",available);
+        values(available).forEach(({unpublish}) => {  
+        console.log("Unpublishing remote service.");
+        unpublish();
+    })
+});
 }
 
 const http = require('http');
