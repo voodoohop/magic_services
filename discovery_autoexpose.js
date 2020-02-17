@@ -9,7 +9,7 @@ const portfinder = require('portfinder');
 const sleep = require('sleep-async')().Promise;
 
 
-const { findServices, publishService } = require("./discovery");
+const { findServices, publishService, findServiceOnce } = require("./discovery");
 
 const {values, keys} = Object;
 
@@ -118,7 +118,7 @@ const http = require('http');
 
 let localServices = {};
 
-async function serviceManager() {
+async function publishLocalServices() {
 
     let disposers = {};
 
@@ -155,28 +155,28 @@ async function serviceManager() {
 
 }
 
-serviceManager();
-exposeRemoteServices(exposerSocket);
-
-// const mode = process.argv[2];
-// if (mode === "manage") {
-//     serviceManager();
-//     exposeRemoteServices(exposerSocket);
-// }
-// else
-//     testCreateService();
-
-
-//     async function testCreateService() {
-//         const port = await portfinder.getPortPromise();
-//         const { publish, unpublish } = await prepareServicePublisher({ type: "testtype", port });
+async function testIfAlreadyRunning() {
+    while (true) {
+        let alreadyRunning = false;
+        try {
+            await findServiceOnce({type: "autoServiceExposer"});
+            alreadyRunning = true;
+        } catch(e) {
+            console.log("Find service timed out.");
+        }
+        if (!alreadyRunning) {
+            console.log("No autoexposer found. Spinning up.");
+            const unpublish = await publishService({type: "autoServiceExposer", port:9999});
+            publishLocalServices();
+            exposeRemoteServices(exposerSocket);
+            nodeCleanup(unpublish);
+            break;
+        } else {
+            console.log("Autoexpose service already running. Checking again in 10 minutes.");
+        }
+        await sleep.sleep(10*60*1000)
+    }   
+};
     
-//         http.createServer(function (request, res) {
-//             res.writeHead(200); res.end('Hello World\n');
-//         }).listen(port);
     
-//         await publish({ txt: {exta: "bla"} });
-//         // setTimeout(unpublish, 7000);
-//     }
-    
-    
+testIfAlreadyRunning();

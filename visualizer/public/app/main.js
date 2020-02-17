@@ -1,6 +1,15 @@
+const {keys, entries} = Object;
+
+function toTable(obj) {
+  return `<table>${entries(obj).map(([key,value]) => `<tr><td><b>${key}</b></td><td>${value}</td></tr>`).join(" ")}</table>`
+}
+
+
 $(function () {
 
+
   var nodes = new vis.DataSet();
+
   var edges = new vis.DataSet();
   var container = document.getElementById('mynetwork');
   var data = {
@@ -37,8 +46,9 @@ $(function () {
 
         var host = {
           id: host_id,
-          label: item.host,
-          shape: "dot"
+          label: item.host.split(".")[0],
+          shape: "dot",
+          font: "14px verdana white"
         }
 
         if (!nodes.get(host.id)) {
@@ -53,11 +63,12 @@ $(function () {
 
         }
 
-        var app_id = item.fqdn;
-
+        var app_id = item.fullname;
+        console.log(toTable(item.txtRecord))
         var app = {
           id: app_id,
-          label: item.type + ":" + item.port,
+          label: item.txtRecord.type + ":" + item.port,
+          title: toTable(item.txtRecord),
           shape: "box",
           color: item.port == 9 ? "#eee" : "#aaa"
         }

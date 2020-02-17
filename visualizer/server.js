@@ -11,7 +11,11 @@ var argv = require('yargs')
 var WebSocketServer = require('ws').Server;
 var express = require('express');
 var server = require('http').createServer();
-var bonjour = require('bonjour');
+
+const { findServices } = require("../discovery");
+
+const {values} = Object;
+
 var wss = new WebSocketServer({
   server: server
 });
@@ -25,6 +29,7 @@ app.use('/static', express.static(path.join(__dirname, 'node_modules', 'vis', 'd
 app.use('/static', express.static(path.join(__dirname, 'node_modules', 'jquery', 'dist')))
 
 app.get('/list.json', function (req, res) {
+  console.log("Sending services",services);
   res.json(services);
 });
 
@@ -34,17 +39,18 @@ app.get('/whoami.json', function (req, res) {
   });
 });
 
-bonjour().find({},function (service) {
-  console.log("found service",service);
+findServices({}, async ({ available, service }, servicesObj) => {
+  console.log("found service",service.name, available);
+  services = values(servicesObj);
   wss.clients.forEach(function (client) {
     console.log('publish_new_service');
 
     client.send(JSON.stringify({
-      "type": "new_serivce",
+      "type": available ? "new_service":"remove_service",
       "service": service
     }));
   });
-  services.push(service);
+
 });
 
 server.on('request', app);

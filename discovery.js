@@ -83,7 +83,7 @@ function findServices({ type,  local = false }, callback) {
     browser.on('serviceUp', function(service) {
         if (local && !_isLocal(service))
           return;
-        console.log("checking service.txtRecord.type", service.txtRecord.type, type)
+        // console.log("checking service.txtRecord.type", service.txtRecord.type, type)
         if (type && !(service.txtRecord.type === type)) 
             return;
         
@@ -96,10 +96,11 @@ function findServices({ type,  local = false }, callback) {
     browser.on('serviceDown', function(service) {
         
         console.log("serviceDown",service);
-        const formatted = _formatService(services[service.name] ||  _formatSevice(service));
+        const formatted = _formatService(services[service.name] ||  _formatService(service));
         if (type && !(formatted.type === type))
           return;
         console.log("service down: ", formatted.name);
+        delete services[service.name];
         callback({available: false, service: formatted}, services);
         
     });
@@ -115,19 +116,18 @@ function findServices({ type,  local = false }, callback) {
  * @param  {} options
  */
 function findServiceOnce(options) {
-    return new Promise(resolve => {
-        const stop = findServices(options, services => {
-            if (services.length > 0) {
+    return _promiseTimeout(1000, new Promise(resolve => {
+        const stop = findServices(options, ({available,service}) => {
+            if (available) {
+                resolve(service);
                 stop();
-                resolve(services[0]);
             }
         })
-    });
+    }));
 }
 
 
 const _isLocal = service => service.host.startsWith(localHost);
-
 
 
 
@@ -159,3 +159,19 @@ async function _unpublish() {
     }
 }
 
+
+const _promiseTimeout = function(ms, promise){
+
+    // Create a promise that rejects in <ms> milliseconds
+    let timeout = new Promise((resolve, reject) => {
+      let id = setTimeout(() => {
+        clearTimeout(id);
+        reject('Timed out in '+ ms + 'ms.')
+      }, ms)
+    })
+    return Promise.race([
+        promise,
+        timeout
+      ])
+}
+  
