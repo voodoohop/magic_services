@@ -53,7 +53,7 @@ async function reverseSSH(localHost, localPort) {
 async function exposeLocalService(service) {
     const { remotePort, host, dispose:disposeReverseSSH } = await reverseSSH(service.host, service.port);
     // const remotePort=21312;
-    const proxiedService = { ...service,txt: {...service.txt, originHost:service.host, originPort: service.port} ,host: REVERSE_SSH_HOST, port: remotePort, url:`http://${REVERSE_SSH_HOST}:${remotePort}`};
+    const proxiedService = { ...service,txt: {...service.txt, originHost:service.host, originPort: service.port, location: "remote"} ,host: REVERSE_SSH_HOST, port: remotePort, url:`http://${REVERSE_SSH_HOST}:${remotePort}`};
 
     console.log(`Local service at ${service.host}:${service.port} now available at ${host}:${remotePort}.`);
     await sleep.sleep(1000);

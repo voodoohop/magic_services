@@ -97,7 +97,7 @@ function findServices({ type,  local = false }, callback) {
         
         console.log("serviceDown",service);
         const formatted = _formatService(services[service.name] ||  _formatSevice(service));
-        if (!(formatted.type === type))
+        if (type && !(formatted.type === type))
           return;
         console.log("service down: ", formatted.name);
         callback({available: false, service: formatted}, services);
