@@ -97,19 +97,6 @@ function exposeRemoteServices(exposerSocket) {
 
 const http = require('http');
 
-async function testCreateService() {
-    const port = await portfinder.getPortPromise();
-    const { publish, unpublish } = await prepareServicePublisher({ type: "testtype", port });
-
-    http.createServer(function (request, res) {
-        res.writeHead(200); res.end('Hello World\n');
-    }).listen(port);
-
-    await publish({ txt: {exta: "bla"} });
-    // setTimeout(unpublish, 7000);
-}
-
-
 let localServices = {};
 
 async function serviceManager() {
@@ -144,10 +131,28 @@ async function serviceManager() {
 
 }
 
-const mode = process.argv[2];
-if (mode === "manage") {
-    serviceManager();
-    exposeRemoteServices(exposerSocket);
-}
-else
-    testCreateService();
+serviceManager();
+exposeRemoteServices(exposerSocket);
+
+// const mode = process.argv[2];
+// if (mode === "manage") {
+//     serviceManager();
+//     exposeRemoteServices(exposerSocket);
+// }
+// else
+//     testCreateService();
+
+
+//     async function testCreateService() {
+//         const port = await portfinder.getPortPromise();
+//         const { publish, unpublish } = await prepareServicePublisher({ type: "testtype", port });
+    
+//         http.createServer(function (request, res) {
+//             res.writeHead(200); res.end('Hello World\n');
+//         }).listen(port);
+    
+//         await publish({ txt: {exta: "bla"} });
+//         // setTimeout(unpublish, 7000);
+//     }
+    
+    

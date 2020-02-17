@@ -5,7 +5,6 @@ const os = require("os");
 const bonjour = require('bonjour')();
 const mdns = require("mdns");
 
-const {values} = Object;
 // 1 hour default time-to-live
 const DEFAULT_TTL = 60 * 60 * 1000;
 const MAESTRON_SERVICE_TYPE = "bakeryservice";
@@ -168,4 +167,3 @@ async function _unpublish() {
     }
 }
 
-findServices({type:"testtype"}, found => console.log("foound",found))
