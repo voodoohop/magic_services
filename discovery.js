@@ -96,7 +96,8 @@ function findServices({ type,  local = false }, callback) {
     browser.on('serviceUp', function(service) {
         if (local && !_isLocal(service))
           return;
-        if (! (service.txtRecord.type === type)) 
+        console.log("checking service.txtRecord.type", service.txtRecord.type, type)
+        if (type && !(service.txtRecord.type === type)) 
             return;
         
         console.log("service up: ", service.name);
@@ -149,7 +150,7 @@ module.exports = { prepareServicePublisher, findServices, findServiceOnce };
 const _formatService = ({name, host, port, txtRecord}) => { 
     host = host && host.replace(/\.$/, "");
     return {
-        url: `${name}://${host}:${port}`,
+        url: `http://${host}:${port}`,
         host, port, txt:txtRecord,
         name,
         type: (txtRecord && txtRecord.type) || undefined

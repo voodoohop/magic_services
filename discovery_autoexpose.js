@@ -103,7 +103,7 @@ async function serviceManager() {
 
     let disposers = {};
 
-    findServices({ type: "testtype" }, async ({ available, service }, services) => {
+    findServices({}, async ({ available, service }, services) => {
         // this is a kind of ugly way of telling exposeRemoteServices which local services don't need to be duplicated
         localServices = services;
 
