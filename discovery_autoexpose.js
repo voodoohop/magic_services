@@ -9,7 +9,7 @@ const portfinder = require('portfinder');
 const sleep = require('sleep-async')().Promise;
 
 
-const { findServices, prepareServicePublisher, findServiceOnce } = require("./discovery");
+const { findServices, prepareServicePublisher } = require("./discovery");
 
 
 const GATEWAY_HOST = "ec2-18-185-70-234.eu-central-1.compute.amazonaws.com";
@@ -23,7 +23,7 @@ const exposerSocket = io(`http://${GATEWAY_HOST}:${GATEWAY_PORT}`);
 
 const cleanupPromise = new Promise(resolve => nodeCleanup(resolve));
 
-async function reverseSSH(localPort) {
+async function reverseSSH(localHost, localPort) {
 
     const remotePort = await new Promise(resolve => exposerSocket.emit("getFreePort", resolve));
 
@@ -32,6 +32,7 @@ async function reverseSSH(localPort) {
             host: REVERSE_SSH_HOST,
             username: REVERSE_SSH_USERNAME,
             localPort,
+            localHost,
             remotePort,
             privateKey: REVERSE_SSH_KEYFILE,
             reverse: true
@@ -49,7 +50,7 @@ async function reverseSSH(localPort) {
 }
 
 async function exposeLocalService(service) {
-    const { remotePort, host, dispose } = await reverseSSH(service.port);
+    const { remotePort, host, dispose } = await reverseSSH(service.host, service.port);
     // const remotePort=21312;
     const proxiedService = { ...service,txt:{...service.txt, origin: {host:service.host, port: service.port}} ,host: REVERSE_SSH_HOST, port: remotePort, url:`http://${REVERSE_SSH_HOST}:${remotePort}`};
 

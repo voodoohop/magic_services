@@ -4,12 +4,13 @@ const nodeCleanup = require('node-cleanup');
 const os = require("os");
 const bonjour = require('bonjour')();
 const mdns = require("mdns");
+const {get_private_ip} = require("network");
 
 // 1 hour default time-to-live
 const DEFAULT_TTL = 60 * 60 * 1000;
 const MAESTRON_SERVICE_TYPE = "bakeryservice";
 
-const localHost = os.hostname();
+const localHost = _formatHost(os.hostname());
 
 console.log("Local host name", localHost);
 const unpublishers = [];
@@ -53,9 +54,14 @@ async function prepareServicePublisher({type, name = null, isUnique = true, host
             console.log("Stopping existing advertisement");
             advertisement.stop();
         }
+        
+
+        const localIp = await new Promise(resolve => get_private_ip((err,ip) => resolve(ip)));
+        console.log("Used network to determine local IP", localIp);
         console.log("Starting new advertisement with type", type);
+
         //advertisement = bonjour.publish({name, type:MAESTRON_SERVICE_TYPE, port, txt: {type}})// 
-        advertisement = mdns.createAdvertisement(["http","tcp", MAESTRON_SERVICE_TYPE], port,{ name, txtRecord: txt, host});
+        advertisement = mdns.createAdvertisement(["http","tcp", MAESTRON_SERVICE_TYPE], port,{ name, txtRecord: txt, host, networkInterface: localIp});
         advertisement.start();
 
 
@@ -145,11 +151,11 @@ const _isLocal = service => service.host.startsWith(localHost);
 
 
 
-module.exports = { prepareServicePublisher, findServices, findServiceOnce };
+module.exports = { prepareServicePublisher, findServices, findServiceOnce, localHost };
 
 
 const _formatService = ({name, host, port, txtRecord}) => { 
-    host = host && host.replace(/\.$/, "").replace(".fritz.box",".local");
+    host = host && _formatHost(host);
     return {
         url: `http://${host}:${port}`,
         host, port, txt:txtRecord,
@@ -158,6 +164,10 @@ const _formatService = ({name, host, port, txtRecord}) => {
     };
 }
 
+
+function _formatHost(host) {
+    return host.replace(/\.$/, "").replace(".fritz.box", ".local");
+}
 
 async function _unpublish() {
     console.log("unpublishing");
