@@ -71,7 +71,7 @@ function exposeRemoteServices(exposerSocket) {
     let available = {};
     exposerSocket.on("publishService", async service => {
         console.log("Got remote service announcement", service);
-        if (localServices[service.name]) {
+        if (localServices[service.name] || localServices[service.name + "_remote"]) {
             console.error("Found", service.name, "locally, Ignoring.");
             return;
         }
