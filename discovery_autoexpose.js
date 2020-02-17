@@ -128,7 +128,7 @@ async function serviceManager() {
 
         // forward i
         if (available) {
-            if (service.location === "remote") {
+            if (service.txt.location === "remote") {
                 console.log(`${service.name}" is tunneled remotely. We don't need to expose it again.`);
                 return;
             }
