@@ -9,9 +9,9 @@ const portfinder = require('portfinder');
 const sleep = require('sleep-async')().Promise;
 
 
-const { findServices, prepareServicePublisher } = require("./discovery");
+const { findServices, publishService } = require("./discovery");
 
-const {values} = Object;
+const {values, keys} = Object;
 
 const GATEWAY_HOST = "ec2-18-185-70-234.eu-central-1.compute.amazonaws.com";
 const GATEWAY_PORT = 4321;
@@ -51,7 +51,7 @@ async function reverseSSH(localHost, localPort) {
 }
 
 async function exposeLocalService(service) {
-    const { remotePort, host, dispose } = await reverseSSH(service.host, service.port);
+    const { remotePort, host, dispose:disposeReverseSSH } = await reverseSSH(service.host, service.port);
     // const remotePort=21312;
     const proxiedService = { ...service,txt:{...service.txt, origin: {host:service.host, port: service.port}} ,host: REVERSE_SSH_HOST, port: remotePort, url:`http://${REVERSE_SSH_HOST}:${remotePort}`};
 
@@ -61,14 +61,14 @@ async function exposeLocalService(service) {
     return () => {
         console.log("Disposing of exposed service", proxiedService);
         console.log("Killing AutoSSH");
-        dispose();
+        disposeReverseSSH();
         exposerSocket.emit("unpublishService", proxiedService);
     };
 }
 
 
 function exposeRemoteServices(exposerSocket) {
-    let available = {};
+    let availableUnpublishers = {};
     exposerSocket.on("publishService", async service => {
         console.log("Got remote service announcement", service);
         if (localServices[service.name] || localServices[service.name + "_remote"]) {
@@ -81,24 +81,33 @@ function exposeRemoteServices(exposerSocket) {
             console.error("service was not reachable. ignoring.", service);
             return;
         }
-        let publisher = available[service.name] || await prepareServicePublisher({ type: service.type, name: service.name + "_remote", isUnique: false, host: service.host, port: service.port });
-        available[service.name] = publisher;
-        console.log(publisher);
-        const { publish } = publisher;
+        if (availableUnpublishers[service.name])
+          availableUnpublishers[service.name]();
+        
+        const unpublisher = await prepareServicePublisher({ 
+            type: service.type, 
+            name: service.name + "_remote", 
+            isUnique: false, 
+            host: service.host, 
+            port: service.port,
+            txt: {...service.txt, location:"remote" }
+         });
+        
+        availableUnpublishers[service.name] = unpublisher;
+
         console.log("Exposing remote service", service);
-        publish({ txt: {...service.txt, location:"remote" }});
     });
     exposerSocket.on("unpublishService", service => {
-        if (!available[service.name]) {
+        if (!availableUnpublishers[service.name]) {
             console.error("Received unpublish, but had not tracked any published services of that name.", service);
             return;
         }
-        available[service.name].unpublish();
-        delete availabe[service.name];
+        availableUnpublishers[service.name]();
+        delete availableUnpublishers[service.name];
     });
     nodeCleanup(() => { 
-        console.log("Cleaning up",available);
-        values(available).forEach(({unpublish}) => {  
+        console.log("Cleaning up",keys(availableUnpublishers));
+        values(availableUnpublishers).forEach(unpublish => {  
         console.log("Unpublishing remote service.");
         unpublish();
     })

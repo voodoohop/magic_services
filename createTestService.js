@@ -8,19 +8,21 @@ const isPortReachable = require('is-port-reachable');
 const portfinder = require('portfinder');
 const http = require('http');
 
-const { findServices, prepareServicePublisher, findServiceOnce } = require("./discovery");
+const { publishService } = require("./discovery");
 
 
 async function testCreateService() {
     const port = await portfinder.getPortPromise();
-    const { publish, unpublish } = await prepareServicePublisher({ type: "testservice2", port });
-
+    
     http.createServer(function (request, res) {
         res.writeHead(200); res.end('Hello World\n');
     }).listen(port);
 
-    await publish({ txt: { some_metadata: "bla" } });
+    const unpublish = await publishService({ type: "testservice2", port, txt: { some_metadata: "bla" } });
+
+
     // setTimeout(unpublish, 7000);
+    nodeCleanup(unpublish);
 }
 
 testCreateService();

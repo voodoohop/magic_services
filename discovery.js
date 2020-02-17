@@ -27,9 +27,7 @@ nodeCleanup(_unpublish);
  * @param  {} serviceDescription.type The service type. This is used for discovery.
  * @param  {} serviceDescription.txt Additional metadata to pass in the DNS TXT field
  */
-async function prepareServicePublisher({type, name = null, isUnique = true, host = localHost, port=null}) {
-    let intervalHandle =null;
-    let advertisement = null;
+async function publishService({type, name = null, isUnique = true, host = localHost, port=null, txt={}}) {
 
     if (name === null)
         name = `${type}`;
@@ -37,55 +35,36 @@ async function prepareServicePublisher({type, name = null, isUnique = true, host
         name = `${name}_${process.pid}`;
 
 
-    const publish = async ({ txt={} } ) => {
-
-        // const publishParams = { name, type, port,  txt };
-
-        txt = {...txt, type};
-
-        if (advertisement) {
-            console.log("Stopping existing advertisement.");
-            advertisement.stop();
-        }
-
-        console.log("Publishing", type, name, port, txt);
-
-        if (advertisement) {
-            console.log("Stopping existing advertisement");
-            advertisement.stop();
-        }
-        
-
-        const localIp = await new Promise(resolve => get_private_ip((err,ip) => resolve(ip)));
-        console.log("Used network to determine local IP", localIp);
-        console.log("Starting new advertisement with type", type);
-
-        //advertisement = bonjour.publish({name, type:MAESTRON_SERVICE_TYPE, port, txt: {type}})// 
-        advertisement = mdns.createAdvertisement(["http","tcp", MAESTRON_SERVICE_TYPE], port,{ name, txtRecord: txt, host, networkInterface: localIp});
-        advertisement.start();
 
 
-        if (intervalHandle)
-            clearInterval(intervalHandle);
+    // const publishParams = { name, type, port,  txt };
 
-        // Re-publish repeatedly
-        intervalHandle = setInterval(async () => {
-            console.log("Republishing service.");
-            await publish(txt);
-        }, DEFAULT_TTL);
+    const txtRecord = {...txt, type};
 
-    }
+    console.log("Publishing", type, name, port, txt);
+
+    const localIp = await new Promise(resolve => get_private_ip((err,ip) => resolve(ip)));
+    console.log("Used network to determine local IP", localIp);
+    console.log("Starting new advertisement with type", type);
+
+    //advertisement = bonjour.publish({name, type:MAESTRON_SERVICE_TYPE, port, txt: {type}})// 
+    const advertisement = mdns.createAdvertisement(["http","tcp", MAESTRON_SERVICE_TYPE], port,{ name, txtRecord, host, networkInterface: localIp});
+    advertisement.start();
+
+    // Re-publish repeatedly
+    intervalHandle = setInterval(async () => {
+        console.log("Republishing service.");
+        await publish(txt);
+    }, DEFAULT_TTL);
+
 
     const unpublish = () => {
         console.log("Unpublishing service", name);
-        if (advertisement) {
-            advertisement.stop();
-            advertisement = null;
-        }
+        advertisement.stop();
     }
 
     unpublishers.push(unpublish);
-    return { publish, unpublish };
+    return  unpublish;
 }
 
 /**
@@ -151,7 +130,7 @@ const _isLocal = service => service.host.startsWith(localHost);
 
 
 
-module.exports = { prepareServicePublisher, findServices, findServiceOnce, localHost };
+module.exports = { publishService, findServices, findServiceOnce, localHost };
 
 
 const _formatService = ({name, host, port, txtRecord}) => { 
