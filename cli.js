@@ -50,6 +50,6 @@ async function exposeService(program) {
             metadata[key] = value;
         });
     }
-    const unpublish = await publishService({ type: name, port, host, txt: metadata });
+    const unpublish = await publishService({ type: name, parseInt(port), host, txt: metadata });
     nodeCleanup(unpublish);
 }
