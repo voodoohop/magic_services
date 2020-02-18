@@ -20,6 +20,8 @@ const REVERSE_SSH_HOST = "ec2-18-185-70-234.eu-central-1.compute.amazonaws.com";
 const REVERSE_SSH_USERNAME = "ubuntu";
 const REVERSE_SSH_KEYFILE = path.join(homedir(), "credentials", "ec2_model_supervisor_key.pem");
 
+const AUTOEXPOSER_SERVICE_TYPE = "autoServiceExposer";
+
 const exposerSocket = io(`http://${GATEWAY_HOST}:${GATEWAY_PORT}`);
 
 const cleanupPromise = new Promise(resolve => nodeCleanup(resolve));
@@ -163,7 +165,7 @@ async function testIfAlreadyRunning() {
     while (true) {
         let alreadyRunning = false;
         try {
-            await findServiceOnce({type: "autoServiceExposer"});
+            await findServiceOnce({type: AUTOEXPOSER_SERVICE_TYPE});
             alreadyRunning = true;
         } catch(e) {
             console.log("Find service timed out.");
@@ -171,7 +173,7 @@ async function testIfAlreadyRunning() {
         if (!alreadyRunning) {
             console.log("No autoexposer found. Spinning up.");
             visServer(9999);
-            const unpublish = await publishService({type: "autoServiceExposer", port:9999, isUnique:false, txt: {noExpose: true}});
+            const unpublish = await publishService({type: AUTOEXPOSER_SERVICE_TYPE, port:9999, isUnique:false, txt: {noExpose: true}});
             publishLocalServices();
             exposeRemoteServices(exposerSocket);
             nodeCleanup(unpublish);
@@ -182,6 +184,5 @@ async function testIfAlreadyRunning() {
         await sleep.sleep(10*60*1000)
     }   
 };
-    
-    
-testIfAlreadyRunning();
+
+module.exports = {autoexpose:testIfAlreadyRunning, AUTOEXPOSER_SERVICE_TYPE};

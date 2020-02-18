@@ -22,8 +22,10 @@
   "homepage": "https://github.com/wyvernnot/vis-bonjour-network#readme",
   "dependencies": {
     "bonjour": "^3.2.2",
+    "commander": "^4.1.1",
     "express": "^4.13.4",
     "jquery": "^2.2.1",
+    "opn": "^6.0.0",
     "vis": "^4.15.1",
     "ws": "^1.0.1",
     "yargs": "^4.2.0"

@@ -120,8 +120,8 @@ function findServices({ type,  local = false }, callback) {
  * Same as findService but returns a promise that resolves as soon as a service is found that meets the requirements
  * @param  {} options
  */
-function findServiceOnce(options) {
-    return _promiseTimeout(1000, new Promise(resolve => {
+function findServiceOnce(options,timeout=1000) {
+    return _promiseTimeout(timeout, new Promise(resolve => {
         const stop = findServices(options, ({available,service}) => {
             if (available) {
                 resolve(service);
