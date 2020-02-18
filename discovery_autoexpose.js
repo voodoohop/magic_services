@@ -132,6 +132,10 @@ async function publishLocalServices() {
                 console.log(`${service.name}" is tunneled remotely. We don't need to expose it again.`);
                 return;
             }
+            if (!service.txt.noExpose) {
+                console.log(`${service.name}" has noExpose flag set. Ignoring.`);
+                return;
+            }
             let removed = false;
             disposers[service.name] = () => { removed = true };
 
@@ -167,7 +171,7 @@ async function testIfAlreadyRunning() {
         if (!alreadyRunning) {
             console.log("No autoexposer found. Spinning up.");
             visServer(9999);
-            const unpublish = await publishService({type: "autoServiceExposer", port:9999, isUnique:false});
+            const unpublish = await publishService({type: "autoServiceExposer", port:9999, isUnique:false, txt: {noExpose: true}});
             publishLocalServices();
             exposeRemoteServices(exposerSocket);
             nodeCleanup(unpublish);
