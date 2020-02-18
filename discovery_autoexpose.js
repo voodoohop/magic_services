@@ -26,7 +26,7 @@ const AUTOEXPOSER_SERVICE_TYPE = "autoServiceExposer";
 
 const cleanupPromise = new Promise(resolve => nodeCleanup(resolve));
 
-async function reverseSSH(localHost, localPort) {
+async function reverseSSH(localHost, localPort, exposerSocket) {
 
     const remotePort = await new Promise(resolve => exposerSocket.emit("getFreePort", resolve));
 
@@ -53,7 +53,7 @@ async function reverseSSH(localHost, localPort) {
 }
 
 async function exposeLocalService(service, exposerSocket) {
-    const { remotePort, host, dispose:disposeReverseSSH } = await reverseSSH(service.host, service.port);
+    const { remotePort, host, dispose:disposeReverseSSH } = await reverseSSH(service.host, service.port, exposerSocket);
     // const remotePort=21312;
     const proxiedService = { ...service,txt: {...service.txt, originHost:service.host, originPort: service.port, location: "remote"} ,host: REVERSE_SSH_HOST, port: remotePort, url:`http://${REVERSE_SSH_HOST}:${remotePort}`};
 
