@@ -30,7 +30,12 @@
     "sleep-async": "^1.0.5",
     "socket.io": "^2.3.0",
     "socket.io-client": "^2.3.0",
-    "yargs": "^15.1.0"
+    "commander": "^4.1.1",
+    "express": "^4.13.4",
+    "jquery": "^2.2.1",
+    "vis": "^4.15.1",
+    "ws": "^1.0.1",
+    "yargs": "^4.2.0"
   },
   "bin": {
     "expose": "./bin/expose"
