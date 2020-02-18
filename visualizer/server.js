@@ -19,8 +19,8 @@ var os = require('os');
 console.log({__dirname});
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/static', express.static(path.join(__dirname, 'node_modules', 'vis', 'dist')))
-app.use('/static', express.static(path.join(__dirname, 'node_modules', 'jquery', 'dist')))
+app.use('/static', express.static(path.join(__dirname, '..','node_modules', 'vis', 'dist')))
+app.use('/static', express.static(path.join(__dirname, '..','node_modules', 'jquery', 'dist')))
 
 app.get('/list.json', function (req, res) {
   console.log("Sending services",services);
