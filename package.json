@@ -32,6 +32,6 @@
     "socket.io-client": "^2.3.0"
   },  
   "bin": {
-    "expose": "./index.js"
+    "expose": "./bin/expose"
   }
 }
