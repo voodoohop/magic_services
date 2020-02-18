@@ -11,18 +11,18 @@ const http = require('http');
 const { publishService } = require("./index");
 
 
-async function testCreateService() {
+async function testCreateService(type,metadata={md:"hello, world"}) {
     const port = await portfinder.getPortPromise();
     
     http.createServer(function (request, res) {
         res.writeHead(200); res.end('Hello World\n');
     }).listen(port);
 
-    const unpublish = await publishService({ type: "testservice2", port, txt: { some_metadata: "bla" } });
+    const unpublish = await publishService({ type, port, txt: metadata });
 
 
     // setTimeout(unpublish, 7000);
     nodeCleanup(unpublish);
 }
 
-testCreateService();
+testCreateService(process.argv[2] || "testservice", {dataset_name: "cello_viola", run_id:1234} );
