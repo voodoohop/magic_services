@@ -3,6 +3,7 @@
 var WebSocketServer = require('ws').Server;
 var express = require('express');
 var server = require('http').createServer();
+const {dirname} = require("path");
 
 const { findServices } = require("../discovery");
 
@@ -16,11 +17,10 @@ var path = require('path');
 var services = [];
 var os = require('os');
 
-console.log({__dirname});
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/static', express.static(path.join(__dirname, '..','node_modules', 'vis', 'dist')))
-app.use('/static', express.static(path.join(__dirname, '..','node_modules', 'jquery', 'dist')))
+app.use('/static', express.static(dirname(require.resolve("vis"))))
+app.use('/static', express.static(dirname(require.resolve("jquery"))))
 
 app.get('/list.json', function (req, res) {
   console.log("Sending services",services);
