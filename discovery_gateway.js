@@ -25,7 +25,7 @@ serverSocket.on('connection', async socket => {
          serviceSources[serviceDescription.name] = socket.id;
          console.log("Received service publish", serviceDescription);
          broadcastServiceUpdate();
-         serverSocket.sockets.emit("publishService", serviceDescription);
+         setTimeout(() => serverSocket.sockets.emit("publishService", serviceDescription), 4000);
     })
 
     socket.on("unpublishService", serviceDescription =>{

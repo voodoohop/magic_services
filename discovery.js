@@ -81,9 +81,14 @@ async function publishService(params) {
  * @param  {boolean} options.local=true Whether to look only on the local host for services
  * @param  {func} callback Callback which is called any time a new service is found that satistfies the query
  */
-function findServices({ type,  local = false }, callback) {
+function findServices({ type,  local = false, onlyMaestron=true }, callback) {
 
-    var browser = mdns.createBrowser(["http","tcp", MAESTRON_SERVICE_TYPE]);
+    const serviceType = ["http","tcp"];
+
+    if (onlyMaestron)
+        serviceType.push(MAESTRON_SERVICE_TYPE);
+
+    var browser = mdns.createBrowser(serviceType);
     let services= {};
     browser.on('serviceUp', function(service) {
         if (local && !_isLocal(service))

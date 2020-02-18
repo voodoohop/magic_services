@@ -60,7 +60,7 @@ process.on('SIGTERM', function () {
 
 module.exports = port => { 
 
-  findServices({}, async ({ available, service }, servicesObj) => {
+  findServices({ onlyMaestron: false }, async ({ available, service }, servicesObj) => {
     console.log("found service",service.name, available);
     services = values(servicesObj);
     wss.clients.forEach(function (client) {
