@@ -1,12 +1,4 @@
-var argv = require('yargs')
-  .usage('Usage: $0 [options]')
-  .default('port', 3000)
-  .describe('port',"server port")
-  .alias('p', 'port')
-  .help('help')
-  .alias('h', 'help')
-  .epilog('copyright 2016')
-  .argv;
+
 
 var WebSocketServer = require('ws').Server;
 var express = require('express');
