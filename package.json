@@ -29,8 +29,9 @@
     "portfinder": "^1.0.25",
     "sleep-async": "^1.0.5",
     "socket.io": "^2.3.0",
-    "socket.io-client": "^2.3.0"
-  },  
+    "socket.io-client": "^2.3.0",
+    "yargs": "^15.1.0"
+  },
   "bin": {
     "expose": "./bin/expose"
   }
