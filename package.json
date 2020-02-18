@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "expose": "node index.js"
+    "expose": "./bin/expose"
   },
   "repository": {
     "type": "git",

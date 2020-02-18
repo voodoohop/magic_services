@@ -24,7 +24,9 @@ var path = require('path');
 var services = [];
 var os = require('os');
 
+console.log({__dirname});
 app.use(express.static(path.join(__dirname, 'public')));
+
 app.use('/static', express.static(path.join(__dirname, 'node_modules', 'vis', 'dist')))
 app.use('/static', express.static(path.join(__dirname, 'node_modules', 'jquery', 'dist')))
 
