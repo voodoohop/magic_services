@@ -77,9 +77,8 @@ function exposeRemoteServices(exposerSocket) {
             console.error("Found", service.name, "locally, Ignoring.");
             return;
         }
-        console.log("Checking if port reachable.");
-        const reachable = await isPortReachable(service.port, { host: service.host });
-        if (!reachable) {
+        // FIXME: reenable
+        if (!await isReachable(service)) {
             console.error("service was not reachable. ignoring.", service);
             return;
         }
@@ -144,8 +143,7 @@ async function publishLocalServices() {
             console.log("Got avalaible service announcement.", service);
             console.log(`Checking if port "${service.port}" is reachable.`);
 
-            const reachable = await isPortReachable(service.port, { host: service.host, timeout:10000 });
-            if (!reachable) {
+            if (!isReachable(service)) {
                 console.log("Port not reachable. Ignoring.");
                 return;
             }
@@ -186,3 +184,17 @@ async function testIfAlreadyRunning() {
 };
 
 module.exports = {autoexpose:testIfAlreadyRunning, AUTOEXPOSER_SERVICE_TYPE};
+
+async function isReachable(service) {
+    console.log("Checking if port reachable.");
+    let timeout=2500;
+    while (timeout<80000) {
+        if (await isPortReachable(service.port, { host: service.host , timeout }))
+            return true;
+        await sleep.sleep(timeout);
+        timeout *= 2;
+        console.log("Service",service.name,"not reachable. Increased timeout to",timeout);
+    }
+
+    return false;
+}

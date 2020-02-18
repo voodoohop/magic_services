@@ -1,6 +1,8 @@
 const {keys, entries} = Object;
 
 function toTable(obj) {
+  if (!obj)
+    return "";
   return `<table>${entries(obj).map(([key,value]) => `<tr><td><b>${key}</b></td><td>${value}</td></tr>`).join(" ")}</table>`
 }
 
@@ -28,6 +30,7 @@ $(function () {
 
     $.when(loadWhoami, loadServices).then(function (whoamiResult, servicesResult) {
 
+      console.log(servicesResult);
       nodes.clear();
       edges.clear();
 
