@@ -22,7 +22,7 @@ const REVERSE_SSH_KEYFILE = path.join(homedir(), "credentials", "ec2_model_super
 
 const AUTOEXPOSER_SERVICE_TYPE = "autoServiceExposer";
 
-const exposerSocket = io(`http://${GATEWAY_HOST}:${GATEWAY_PORT}`);
+
 
 const cleanupPromise = new Promise(resolve => nodeCleanup(resolve));
 
@@ -52,7 +52,7 @@ async function reverseSSH(localHost, localPort) {
     });
 }
 
-async function exposeLocalService(service) {
+async function exposeLocalService(service, exposerSocket) {
     const { remotePort, host, dispose:disposeReverseSSH } = await reverseSSH(service.host, service.port);
     // const remotePort=21312;
     const proxiedService = { ...service,txt: {...service.txt, originHost:service.host, originPort: service.port, location: "remote"} ,host: REVERSE_SSH_HOST, port: remotePort, url:`http://${REVERSE_SSH_HOST}:${remotePort}`};
@@ -119,7 +119,7 @@ const http = require('http');
 
 let localServices = {};
 
-async function publishLocalServices() {
+async function publishLocalServices(exposerSocket) {
 
     let disposers = {};
 
@@ -148,7 +148,7 @@ async function publishLocalServices() {
                 return;
             }
             console.log("Exposing service", service);
-            disposers[service.name] = await exposeLocalService(service);
+            disposers[service.name] = await exposeLocalService(service, exposerSocket);
             if (removed)
                 disposers[service.name]();
         } else {
@@ -160,6 +160,7 @@ async function publishLocalServices() {
 }
 
 async function testIfAlreadyRunning() {
+    const exposerSocket = io(`http://${GATEWAY_HOST}:${GATEWAY_PORT}`);
     while (true) {
         let alreadyRunning = false;
         try {
@@ -172,7 +173,7 @@ async function testIfAlreadyRunning() {
             console.log("No autoexposer found. Spinning up.");
             visServer(9999);
             const unpublish = await publishService({type: AUTOEXPOSER_SERVICE_TYPE, port:9999, isUnique:false, txt: {noExpose: true}});
-            publishLocalServices();
+            publishLocalServices(exposerSocket);
             exposeRemoteServices(exposerSocket);
             nodeCleanup(unpublish);
             break;

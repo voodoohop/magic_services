@@ -2,7 +2,7 @@ const io = require("socket.io");
 const {getPortPromise} = require('portfinder');
 const nodeCleanup = require('node-cleanup');
 const {random} = require("lodash");
-const {values, keys} = Object;
+const {values, keys, entries} = Object;
 
 const PORT = 4321;
 
@@ -39,9 +39,9 @@ serverSocket.on('connection', async socket => {
    socket.on("disconnect", () => {
        console.log("Forwarder disconnected. Unpublishing his services.")
        delete connections[socket.id];
-       values(serviceSources).forEach((socketId,i) => {
+       entries(serviceSources).forEach(([name, socketId],i) => {
          if (socketId === socket.id) {
-             const unpublishService = services[keys(serviceSources)[i]];
+             const unpublishService = services[name];
              console.log("Sending unpublish of",unpublishService)
            serverSocket.sockets.emit("unpublishService", unpublishService);
          }
