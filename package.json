@@ -1,5 +1,5 @@
 {
-  "name": "auto-socket",
+  "name": "magic-services",
   "version": "0.9.0",
   "description": "",
   "main": "index.js",
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/voodoohop/auto_service_discovery.git"
+    "url": "git+https://github.com/Pixtunes/magic_services.git"
   },
   "author": "Thomas Haferlach",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/voodoohop/auto_service_discovery/issues"
+    "url": "https://github.com/Pixtunes/magic_services/issues"
   },
-  "homepage": "https://github.com/voodoohop/auto_service_discovery#readme",
+  "homepage": "https://github.com/Pixtunes/magic_services#readme",
   "dependencies": {
     "autossh": "^0.2.0",
     "bonjour": "^3.5.0",
