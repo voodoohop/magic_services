@@ -39,20 +39,6 @@ app.get('/whoami.json', function (req, res) {
   });
 });
 
-findServices({}, async ({ available, service }, servicesObj) => {
-  console.log("found service",service.name, available);
-  services = values(servicesObj);
-  wss.clients.forEach(function (client) {
-    console.log('publish_new_service');
-
-    client.send(JSON.stringify({
-      "type": available ? "new_service":"remove_service",
-      "service": service
-    }));
-  });
-
-});
-
 server.on('request', app);
 
 server.on('listening', function () {
@@ -69,7 +55,6 @@ server.on('listening', function () {
   }
 });
 
-server.listen(argv.port);
 
 process.on('SIGINT', function () {
   process.exit(0)
@@ -78,3 +63,20 @@ process.on('SIGINT', function () {
 process.on('SIGTERM', function () {
   process.exit(0)
 });
+
+module.exports = port => { 
+
+  findServices({}, async ({ available, service }, servicesObj) => {
+    console.log("found service",service.name, available);
+    services = values(servicesObj);
+    wss.clients.forEach(function (client) {
+      console.log('publish_new_service');
+  
+      client.send(JSON.stringify({
+        "type": available ? "new_service":"remove_service",
+        "service": service
+      }));
+    });
+  });
+  server.listen(port);
+};

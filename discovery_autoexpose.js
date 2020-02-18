@@ -7,7 +7,7 @@ const nodeCleanup = require('node-cleanup');
 const isPortReachable = require('is-port-reachable');
 const portfinder = require('portfinder');
 const sleep = require('sleep-async')().Promise;
-
+const visServer = require("./visualizer/server");
 
 const { findServices, publishService, findServiceOnce } = require("./discovery");
 
@@ -166,7 +166,8 @@ async function testIfAlreadyRunning() {
         }
         if (!alreadyRunning) {
             console.log("No autoexposer found. Spinning up.");
-            const unpublish = await publishService({type: "autoServiceExposer", port:9999});
+            visServer(9999);
+            const unpublish = await publishService({type: "autoServiceExposer", port:9999, isUnique:false});
             publishLocalServices();
             exposeRemoteServices(exposerSocket);
             nodeCleanup(unpublish);

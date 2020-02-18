@@ -27,8 +27,10 @@ nodeCleanup(_unpublish);
  * @param  {} serviceDescription.type The service type. This is used for discovery.
  * @param  {} serviceDescription.txt Additional metadata to pass in the DNS TXT field
  */
-async function publishService({type, name = null, isUnique = true, host = localHost, port=null, txt={}}) {
-
+async function publishService(params) {
+    
+    let {type, name = null, isUnique = true, host = localHost, port=null, txt={}}  = params;
+    
     if (name === null)
         name = `${type}`;
     if (isUnique)
@@ -51,11 +53,6 @@ async function publishService({type, name = null, isUnique = true, host = localH
     const advertisement = mdns.createAdvertisement(["http","tcp", MAESTRON_SERVICE_TYPE], port,{ name, txtRecord, host, networkInterface: localIp});
     advertisement.start();
 
-    // Re-publish repeatedly
-    const intervalHandle = setInterval(async () => {
-        console.log("Republishing service.");
-        await publish(txt);
-    }, DEFAULT_TTL);
 
 
     const unpublish = () => {
@@ -63,6 +60,14 @@ async function publishService({type, name = null, isUnique = true, host = localH
         advertisement.stop();
         clearInterval(intervalHandle);
     }
+
+    // Re-publish repeatedly
+    const intervalHandle = setInterval(async () => {
+        console.log("Republishing service.");
+        unpublish();
+        await publishService(params);
+    }, DEFAULT_TTL);
+
 
     unpublishers.push(unpublish);
     return  unpublish;
