@@ -151,6 +151,8 @@ const _formatService = ({name, host, port, txtRecord}) => {
 
 
 function _formatHost(host) {
+    if (host.toLowerCase() === "localhost") 
+        return localHost;
     return host.replace(/\.$/, "").replace(".fritz.box", ".local");
 }
 
