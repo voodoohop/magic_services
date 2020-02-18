@@ -134,7 +134,7 @@ async function publishLocalServices() {
                 console.log(`${service.name}" is tunneled remotely. We don't need to expose it again.`);
                 return;
             }
-            if (!service.txt.noExpose) {
+            if (service.txt.noExpose) {
                 console.log(`${service.name}" has noExpose flag set. Ignoring.`);
                 return;
             }
