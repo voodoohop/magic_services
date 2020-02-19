@@ -3,34 +3,29 @@ const {getPortPromise} = require('portfinder');
 const nodeCleanup = require('node-cleanup');
 const {random} = require("lodash");
 const {values, keys, entries} = Object;
+const {isReachable} = require("./helpers");
 
 const PORT = 4321;
 
 const serverSocket = io.listen(PORT);
 
 let services = {};
-let serviceSources = {};
-
-let connections = {};
 
 serverSocket.on('connection', async socket => {
-
-    connections[socket.id] = socket;
 
     console.log("Connection from client", socket.id);
     socket.on("getFreePort", async callback => callback(await getPortPromise({port: random(5000,65000), stopPort: 65535 })));
         
-    socket.on("publishService", serviceDescription =>{
-         services[serviceDescription.name] = serviceDescription;
-         serviceSources[serviceDescription.name] = socket.id;
+    socket.on("publishService", async serviceDescription => {
+         services[serviceDescription.name] = {service: serviceDescription, socket};
          console.log("Received service publish", serviceDescription);
+         if (!isReachable(serviceDescription))
          broadcastServiceUpdate();
-         setTimeout(() => serverSocket.sockets.emit("publishService", serviceDescription), 4000);
+         serverSocket.sockets.emit("publishService", serviceDescription);
     })
 
     socket.on("unpublishService", serviceDescription =>{
         delete services[serviceDescription.name];
-        delete serviceSources[serviceDescription.name];
         console.log("Received service publish", serviceDescription);
         broadcastServiceUpdate();
         serverSocket.sockets.emit("unpublishService", serviceDescription);
@@ -38,12 +33,11 @@ serverSocket.on('connection', async socket => {
 
    socket.on("disconnect", () => {
        console.log("Forwarder disconnected. Unpublishing his services.")
-       delete connections[socket.id];
-       entries(serviceSources).forEach(([name, socketId],i) => {
+       values(services).forEach(({ service, socket }) => {
          if (socketId === socket.id) {
-             const unpublishService = services[name];
-             console.log("Sending unpublish of",unpublishService)
-           serverSocket.sockets.emit("unpublishService", unpublishService);
+
+             console.log("Sending unpublish of", service)
+             serverSocket.sockets.emit("unpublishService", service);
          }
        });
    })

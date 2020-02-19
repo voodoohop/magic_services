@@ -10,6 +10,7 @@ const sleep = require('sleep-async')().Promise;
 const visServer = require("./visualizer/server");
 
 const { findServices, publishService, findServiceOnce } = require("./discovery");
+const {isReachable} = require("./helpers");
 
 const {values, keys} = Object;
 
@@ -22,9 +23,6 @@ const REVERSE_SSH_KEYFILE = path.join(homedir(), "credentials", "ec2_model_super
 
 const AUTOEXPOSER_SERVICE_TYPE = "autoServiceExposer";
 
-
-
-const cleanupPromise = new Promise(resolve => nodeCleanup(resolve));
 
 async function reverseSSH(localHost, localPort, exposerSocket) {
 
@@ -185,17 +183,3 @@ async function testIfAlreadyRunning() {
 };
 
 module.exports = {autoexpose:testIfAlreadyRunning, AUTOEXPOSER_SERVICE_TYPE};
-
-async function isReachable(service) {
-    console.log("Checking if port reachable.");
-    let timeout=2500;
-    while (timeout<80000) {
-        if (await isPortReachable(service.port, { host: service.host , timeout }))
-            return true;
-        await sleep.sleep(timeout);
-        timeout *= 2;
-        console.log("Service",service.name,"not reachable. Increased timeout to",timeout);
-    }
-
-    return false;
-}
