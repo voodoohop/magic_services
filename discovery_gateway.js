@@ -16,15 +16,18 @@ serverSocket.on('connection', async socket => {
     console.log("Connection from client", socket.id);
     socket.on("getFreePort", async callback => callback(await getPortPromise({port: random(5000,65000), stopPort: 65535 })));
         
-    socket.on("publishService", async serviceDescription => {
+    socket.on("publishService", serviceDescription => {
          services[serviceDescription.name] = {service: serviceDescription, socket};
          console.log("Received service publish", serviceDescription);
-         if (! await isReachable(serviceDescription)) {
-           console.error("Not reachable",serviceDescription,". Ignoring.");
-           return;
-         }
-         broadcastServiceUpdate();
-         serverSocket.sockets.emit("publishService", serviceDescription);
+         isReachable(serviceDescription).then(reachable => {
+          if (reachable) {
+            broadcastServiceUpdate();
+            serverSocket.sockets.emit("publishService", serviceDescription);
+          } else {
+            console.error("Not reachable",serviceDescription,". Ignoring.");
+          }
+        })
+
     })
 
     socket.on("unpublishService", serviceDescription =>{
