@@ -153,9 +153,9 @@ async function findServices(opts, callback) {
     });
 }
 
-async function findAccumulatedServices(opts, callback, debounceTime=5000) {
+async function findAccumulatedServices(opts, callback, debounceTime=3000) {
 
-    const debouncedServicesCallback = callback; //debounce(callback, debounceTime);
+    const debouncedServicesCallback = debounce(callback, debounceTime);
 
     findServices(opts, (_, services) => {
         console.log("found accumulated services", keys(services));
