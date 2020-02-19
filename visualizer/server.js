@@ -68,7 +68,7 @@ module.exports = port => {
       console.log("Refreshing client.");
       client.send("refresh");
     });
-  }, 500);
+  }, 1000);
 
   server.listen(port);
 };

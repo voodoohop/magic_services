@@ -1,11 +1,20 @@
-const {keys, entries} = Object;
+const { keys, entries } = Object;
+
+
+const BACKGROUND_COLOR = "#222";
+const BORDER_COLOR = "rgba(255,255,255,0.4)";
+const ROOT_NODE = "conn";
 
 function toTable(obj) {
   if (!obj)
     return "";
-  return `<table>${entries(obj).map(([key,value]) => `<tr><td><b>${key}</b></td><td>${value}</td></tr>`).join(" ")}</table>`
+  return `<table>${entries(obj).map(([key, value]) => `<tr><td><b>${key}</b></td><td>${value}</td></tr>`).join(" ")}</table>`
 }
 
+function truncateWithEllipses(text, max) 
+{
+    return text.substr(0,max-1)+(text.length>max ? `…`:''); 
+}
 
 $(function () {
 
@@ -23,6 +32,7 @@ $(function () {
 
   var network = new vis.Network(container, data, options);
 
+
   function draw() {
 
     var loadWhoami = $.getJSON("/whoami.json");
@@ -39,48 +49,82 @@ $(function () {
       var services = servicesResult[0];
 
 
+
       nodes.add({
-        id: "9587",
+        id: ROOT_NODE,
         type: "dot"
       })
 
       services.forEach(function (item) {
-        var host_id = item.host;
 
-        var host = {
-          id: host_id,
-          label: item.host.split(".")[0],
-          shape: "dot",
-          font: "14px verdana white"
-        }
+        let { txt = {}, host: host_id } = item;
 
-        if (!nodes.get(host.id)) {
-          nodes.add(host);
+          const remote_host = txt.originHost ? 
+          {
+            id: txt.originHost,
+            label: txt.originHost.split(".")[0],
+            group: "host"
+          } 
+          : null;
 
-          edges.add({
-            from: "9587",
-            to: host_id,
-            label: item.addresses && item.addresses[1],
-            dashes: true
-          });
+          var host = {
+            id: host_id,
+            label: item.host.split(".")[0],
+            group: "host"
+          }
 
-        }
+          if (remote_host) {
+            host.color = {background: "transparent"};
+            host.group = "gateway";
+          }
+
+          if (!nodes.get(host.id)) {
+            nodes.add(host);
+  
+            edges.add({
+              from: ROOT_NODE,
+              to: host_id,
+              label: item.addresses && item.addresses[1],
+              dashes: true
+            });
+  
+          }
+
+          if (remote_host) {
+            if (!nodes.get(remote_host.id)) {
+              nodes.add(remote_host);
+              edges.add({
+                from: remote_host.id,
+                to: host_id,
+                label:null,
+                dashes: true
+              });   
+            }
+
+   
+          }
+        
+
+
 
         var app_id = item.name;
-        console.log(toTable(item.txtRecord))
+
+        const description = txt.dataset_name || ("(" + item.port+")");
+        console.log(description)
+        const secondLine = truncateWithEllipses(description, 12);
+        console.log(secondLine)
         var app = {
           id: app_id,
-          label: item.type + ":" + item.port,
-          title: toTable(item.txt),
-          shape: "box",
-          color: item.port == 9 ? "#eee" : "#aaa",
-          group: "diamonds"
+          label: item.type + "\n" + secondLine,
+          title: toTable(txt),
+          group: "app",
+          borderWidth:1
         }
 
         if (!nodes.get(app_id)) {
           nodes.add(app);
           edges.add({
-            from: host_id,
+            from: remote_host ? remote_host.id : host_id,
             to: app_id,
             color: {
               inherit: 'to'
@@ -104,7 +148,21 @@ $(function () {
 })
 
 function _getVisJSOptions() {
+  const nodeColors = {
+    background: BACKGROUND_COLOR,
+    border: BORDER_COLOR,
+    hover: {
+      border: "white",
+      background: BACKGROUND_COLOR
+    },
+    highlight: {
+      border: "white",
+      background: BACKGROUND_COLOR      
+    }
+  };
+
   return {
+    hover: true,
     height: $(window).innerHeight() + "px",
     // "physics": {
     //   "barnesHut": {
@@ -117,28 +175,40 @@ function _getVisJSOptions() {
     //   "minVelocity": 0.75
     // },
     nodes: {
-      shape: 'dot',
-      size: 20,
+      size: 25,
       font: {
         size: 15,
         color: '#ffffff'
       },
-      borderWidth: 2
+
+      borderWidth: 2,
+      color: nodeColors,
     },
     edges: {
-      width: 2
+      width: 1
     },
     groups: {
-      diamonds: {
-        color: { background: 'transparent', border: 'white' },
-        shape: 'diamond'
+      host: {
+        shape: "circle",
+        // font: "14px verdana white",
+        // color: nodeColors
       },
-      dotsWithLabel: {
-        label: "I'm a dot!",
-        shape: 'dot',
-        color: 'cyan'
+      gateway: {
+        shape: "circle",
+        // font: "14px verdana white",
+        // borderWidth: 2,
+        "shapeProperties": {
+          "borderDashes": true
+        },
+        // color: {...nodeColors, background:"transparent",hover:{...nodeColors.hover, background: "transparent"}}
       },
-      mints: { color: 'rgb(0,255,140)' },
+      app: {
+        color: nodeColors,
+        shape: 'box',
+        font: {
+          size:12
+        }
+      },
       icons: {
         shape: 'icon',
         icon: {
@@ -151,6 +221,9 @@ function _getVisJSOptions() {
       source: {
         color: { border: 'white' }
       }
+    },
+    "interaction": {
+      "hover": true
     }
   };
 }
