@@ -99,7 +99,7 @@ function findServicesRemote(opts, callback) {
 function _formatRemoteService(service) {
     return {
         type: service.type,
-        name: service.name + "_remote",
+        name: service.name,
         host: service.host,
         port: service.port,
         txt: { ...service.txt, location: "remote" }
