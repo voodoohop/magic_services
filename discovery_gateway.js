@@ -19,7 +19,7 @@ serverSocket.on('connection', async socket => {
     socket.on("publishService", async serviceDescription => {
          services[serviceDescription.name] = {service: serviceDescription, socket};
          console.log("Received service publish", serviceDescription);
-         if (!isReachable(serviceDescription)) {
+         if (! await isReachable(serviceDescription)) {
            console.error("Not reachable",serviceDescription,". Ignoring.");
            return;
          }
