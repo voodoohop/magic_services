@@ -24,6 +24,7 @@ serverSocket.on('connection', async socket => {
            console.error("Not reachable",serviceDescription,". Ignoring.");
            return;
          }
+         console.log("Server responded. Publishing to everyone.");
          broadcastServiceUpdate();
          serverSocket.sockets.emit("publishService", serviceDescription);
     })
