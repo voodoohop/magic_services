@@ -26,7 +26,7 @@ const exposerSocket = io(`http://${GATEWAY_HOST}:${GATEWAY_PORT}`);
 
 async function reverseSSH(localHost, localPort) {
 
-    const remotePort = await new Promise(resolve => exposerSocket.emit("getFreePort", resolve));
+    const remotePort = await new Promise(resolve => exposerSocket.emit("getFreePort", localPort, resolve));
 
     return await new Promise((resolve, reject) => {
         const autoSSHClient = autossh({

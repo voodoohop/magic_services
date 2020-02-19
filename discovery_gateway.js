@@ -15,7 +15,7 @@ let services = {};
 serverSocket.on('connection', socket => {
 
     console.log("Connection from client", socket.id);
-    socket.on("getFreePort", async callback => callback(await getPortPromise({port: random(5000,65000), stopPort: 65535 })));
+    socket.on("getFreePort", async (localPort, callback) => callback(await getPortPromise({port: localPort, stopPort: 65535 })));
         
     socket.on("publishService", async serviceDescription => {
          services[serviceDescription.name] = {service: serviceDescription, socket};

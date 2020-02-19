@@ -38,7 +38,7 @@ async function launchVisualizer(port) {
 }
 
 async function exposeService(program) {
-    const [name, host_and_port] = program.expose.split("@");
+    const [type, host_and_port] = program.expose.split("@");
     const [host, port] = host_and_port.split(":");
     let metadata = {};
     if (program.exposeMetadata) {
@@ -48,6 +48,8 @@ async function exposeService(program) {
             metadata[key] = value;
         });
     }
-    const unpublish = await publishService({ type: name, port: parseInt(port), host, txt: metadata });
+    const service = { type, port: parseInt(port), host, txt: metadata };
+    console.log("Publishing", service);
+    const unpublish = await publishService(service);
     nodeCleanup(unpublish);
 }
