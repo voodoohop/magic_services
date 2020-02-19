@@ -6,6 +6,7 @@ const sleep = require('sleep-async')().Promise;
 
 const { fromEntries, values, keys } = Object;
 
+
 const identityTransformer = stream$ => stream$;
 
 
@@ -21,17 +22,21 @@ const notNull = o => o != null;
 
 const objectEqual = (o1, o2) => JSON.stringify(o1) == JSON.stringify(o2);
 
+// Default to 2 minute max timeout
+const DEFAULT_MAX_REACHABLE_TIMEOUT = 90;
 
-async function isReachable(service) {
+async function isReachable(service, max_timeout_seconds = DEFAULT_MAX_REACHABLE_TIMEOUT) {
     console.log("Checking if port reachable.");
-    let timeout=2500;
-    while (timeout < 10*60*1000) {
-        if (await isPortReachable(service.port, { host: service.host , timeout }))
+    let timeout_secs = 2;
+    
+    do {
+        if (await isPortReachable(service.port, { host: service.host , timeout: timeout_secs * 1000 }))
             return true;
-        await sleep.sleep(timeout);
-        timeout *= 2;
-        console.log("Service",service.name,{host:service.host, port: service.port }, "not reachable. Increased timeout to",timeout);
-    }
+        await sleep.sleep(timeout_secs * 1000);
+        timeout_secs *= 2;
+        console.log("Service",service.name,{host:service.host, port: service.port }, "not reachable. Increased timeout to",timeout_secs);
+    
+    } while (timeout_secs < max_timeout_seconds);
 
     return false;
 }

@@ -49,7 +49,8 @@ async function publishService(params) {
     
     const service={type, name, host, port, txt};
 
-    if (! await isReachable(service)) {
+    // 10 minute timeout in case service takes a long time to start up
+    if (! await isReachable(service, 60*10)) {
         console.error("Service was not reachable. Abandoning.");
         return () => null;
     }
