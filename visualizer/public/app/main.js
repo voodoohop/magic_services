@@ -18,9 +18,9 @@ $(function () {
     nodes: nodes,
     edges: edges
   };
-  var options = {
-    height: $(window).innerHeight() + "px"
-  };
+
+  var options = _getVisJSOptions();
+
   var network = new vis.Network(container, data, options);
 
   function draw() {
@@ -73,7 +73,8 @@ $(function () {
           label: item.type + ":" + item.port,
           title: toTable(item.txt),
           shape: "box",
-          color: item.port == 9 ? "#eee" : "#aaa"
+          color: item.port == 9 ? "#eee" : "#aaa",
+          group: "diamonds"
         }
 
         if (!nodes.get(app_id)) {
@@ -101,3 +102,55 @@ $(function () {
   })
 
 })
+
+function _getVisJSOptions() {
+  return {
+    height: $(window).innerHeight() + "px",
+    // "physics": {
+    //   "barnesHut": {
+    //     "theta": 0.15,
+    //     "springLength": 120,
+    //     "springConstant": 0.1,
+    //     "damping": 0.68,
+    //     "avoidOverlap": 0.58
+    //   },
+    //   "minVelocity": 0.75
+    // },
+    nodes: {
+      shape: 'dot',
+      size: 20,
+      font: {
+        size: 15,
+        color: '#ffffff'
+      },
+      borderWidth: 2
+    },
+    edges: {
+      width: 2
+    },
+    groups: {
+      diamonds: {
+        color: { background: 'transparent', border: 'white' },
+        shape: 'diamond'
+      },
+      dotsWithLabel: {
+        label: "I'm a dot!",
+        shape: 'dot',
+        color: 'cyan'
+      },
+      mints: { color: 'rgb(0,255,140)' },
+      icons: {
+        shape: 'icon',
+        icon: {
+          face: 'FontAwesome',
+          code: '\uf0c0',
+          size: 50,
+          color: 'orange'
+        }
+      },
+      source: {
+        color: { border: 'white' }
+      }
+    }
+  };
+}

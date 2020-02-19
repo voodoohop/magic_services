@@ -23,8 +23,8 @@ app.use('/static', express.static(dirname(require.resolve("vis"))))
 app.use('/static', express.static(dirname(require.resolve("jquery"))))
 
 app.get('/list.json', function (req, res) {
-  console.log("Sending services",services);
-  res.json(services);
+  console.log("Sending services",keys(services));
+  res.json(values(services));
 });
 
 app.get('/whoami.json', function (req, res) {
@@ -60,15 +60,15 @@ server.on('listening', function () {
 
 module.exports = port => { 
 
-  findAccumulatedServices({}, async (servicesObj) => {
+  findAccumulatedServices({}, (servicesObj) => {
     console.log("found services", keys(servicesObj));
-    services = values(servicesObj);
-
+    services = servicesObj;
+    console.log("Sending",keys(services));
     wss.clients.forEach(function (client) {
       console.log("Refreshing client.");
       client.send("refresh");
     });
   }, 500);
-  
+
   server.listen(port);
 };

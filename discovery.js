@@ -9,6 +9,8 @@ const {isReachable} = require("./helpers");
 const sleep = require('sleep-async')().Promise;
 const {debounce} = require("lodash");
 
+const {keys} = Object;
+
 // 2 minute health check
 const HEALTH_CHECK_INTERVAL = 2 * 60 * 1000;
 const MAESTRON_SERVICE_TYPE = "bakeryservice";
@@ -99,6 +101,7 @@ function findServicesLocal({ type,  local = false, onlyMaestron=true }, callback
         serviceType.push(MAESTRON_SERVICE_TYPE);
 
     var browser = mdns.createBrowser(serviceType);
+
     browser.on('serviceUp', function(service) {
         if (local && !_isLocal(service))
           return;
@@ -108,18 +111,15 @@ function findServicesLocal({ type,  local = false, onlyMaestron=true }, callback
         
         console.log("service up: ", service);
         callback({available: true, service:_formatServiceFromBonjour(service)});
-        
     });
 
     browser.on('serviceDown', function(service) {
-        
         console.log("serviceDown",service);
         const formatted = _formatServiceFromBonjour(service);
         if (type && !(formatted.type === type))
           return;
-        console.log("service down: ", formatted.name);
-        callback({available: false, service: formatted});
-        
+        console.log("Service down: ", formatted.name);
+        callback({available: false, service: formatted}); 
     });
 
     browser.start();
@@ -143,7 +143,6 @@ async function findServices(opts, callback) {
     await sleep.sleep(1000);
 
     findServicesRemote(opts, ({available, service}) => {
-        service = _formatServiceFromBonjour(service)
         if (available)
             remoteServices[service.name] = service;
         else
@@ -156,12 +155,12 @@ async function findServices(opts, callback) {
 
 async function findAccumulatedServices(opts, callback, debounceTime=5000) {
 
-    const debouncedServicesCallback = 
-    debounce(
-        (_, services) => callback(services)
-    , debounceTime);
+    const debouncedServicesCallback = callback; //debounce(callback, debounceTime);
 
-    findServices(opts, debouncedServicesCallback)
+    findServices(opts, (_, services) => {
+        console.log("found accumulated services", keys(services));
+        debouncedServicesCallback(services)
+    })
 }
 
 /**

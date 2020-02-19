@@ -45,12 +45,15 @@ serverSocket.on('connection', socket => {
              socket.broadcast.emit("unpublishService", service);
          }
        });
+   });
+
+   socket.on("sendServices", () => {
+      values(services).forEach(({service}) => { 
+        console.log("Publishing existing service",service, "to", socket.id);
+        socket.emit("publishService",service);
+      })
    })
 
-   values(services).forEach(({service}) => { 
-     console.log("Publishing existing service",service,"to",socket.id);
-     socket.emit("publishService",service);
-   })
     
 
 });

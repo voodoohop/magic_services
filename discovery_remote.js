@@ -7,8 +7,6 @@ const nodeCleanup = require('node-cleanup');
 const sleep = require('sleep-async')().Promise;
 const {existsSync} = require("fs")
 
-
-const { findServices, publishService, findServiceOnce } = require("./discovery");
 const {isReachable} = require("./helpers");
 
 const {values, keys} = Object;
@@ -112,6 +110,7 @@ function findServicesRemote(opts, callback) {
         }
         callback({available: false, service: _formatRemoteService(service)})
     });
+    exposerSocket.emit("sendServices");
 }
 
 
