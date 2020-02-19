@@ -25,14 +25,14 @@ serverSocket.on('connection', async socket => {
            return;
          }
          console.log("Server responded. Publishing to everyone.");
-         broadcastServiceUpdate();
+
          serverSocket.sockets.emit("publishService", serviceDescription);
     })
 
     socket.on("unpublishService", serviceDescription =>{
         delete services[serviceDescription.name];
         console.log("Received service publish", serviceDescription);
-        broadcastServiceUpdate();
+
         serverSocket.sockets.emit("unpublishService", serviceDescription);
    })
 
@@ -52,7 +52,3 @@ serverSocket.on('connection', async socket => {
 
 });
 
-function broadcastServiceUpdate() {
-    // FIXME: should not emit to originator
-    serverSocket.sockets.emit("services", mapValues(services, ({service}) => service));
-}
