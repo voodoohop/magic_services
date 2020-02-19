@@ -50,8 +50,8 @@ async function reverseSSH(localHost, localPort) {
     });
 }
 
-
 async function exposeLocalService(service) {
+
     const { remotePort, host, dispose:disposeReverseSSH } = await reverseSSH(service.host, service.port, exposerSocket);
     // const remotePort=21312;
     const proxiedService = { ...service,txt: {...service.txt, originHost:service.host, originPort: service.port, location: "remote"} ,host: REVERSE_SSH_HOST, port: remotePort, url:`http://${REVERSE_SSH_HOST}:${remotePort}`};
@@ -59,11 +59,20 @@ async function exposeLocalService(service) {
     console.log(`Local service at ${service.host}:${service.port} now available at ${host}:${remotePort}.`);
     await sleep.sleep(1000);
     exposerSocket.emit("publishService", proxiedService);
+    
+    const reemit = () => {
+        console.log("Socket reconnected. Republishing");
+        exposerSocket.emit("publishService", proxiedService);
+    };
+
+    exposerSocket.on("reconnect", reemit);
+   
     return () => {
         console.log("Disposing of exposed service", proxiedService);
         console.log("Killing AutoSSH");
         disposeReverseSSH();
         exposerSocket.emit("unpublishService", proxiedService);
+        exposerSocket.off(reemit);
     };
 }
 
@@ -73,7 +82,6 @@ function findServicesRemote(opts, callback) {
     exposerSocket.on("publishService", async service => {
         console.log("Received remote service", service);
 
-        
         if (!await isReachable(service)) {
             console.error("service was not reachable. ignoring.", service);
             return;
@@ -105,46 +113,6 @@ function _formatRemoteService(service) {
         txt: { ...service.txt, location: "remote" }
     };
 }
-
-// function publishLocalServices(exposerSocket) {
-
-//     let disposers = {};
-
-//     return findServices({}, async ({ available, service }, services) => {
-//         // this is a kind of ugly way of telling exposeRemoteServices which local services don't need to be duplicated
-//         localServices = services;
-
-//         // forward i
-//         if (available) {
-//             if (service.txt.location === "remote") {
-//                 console.log(`${service.name}" is tunneled remotely. We don't need to expose it again.`);
-//                 return;
-//             }
-//             if (service.txt.noExpose) {
-//                 console.log(`${service.name}" has noExpose flag set. Ignoring.`);
-//                 return;
-//             }
-//             let removed = false;
-//             disposers[service.name] = () => { removed = true };
-
-//             console.log("Got avalaible service announcement.", service);
-//             console.log(`Checking if port "${service.port}" is reachable.`);
-
-//             if (!isReachable(service)) {
-//                 console.log("Port not reachable. Ignoring.");
-//                 return;
-//             }
-//             console.log("Exposing service", service);
-//             disposers[service.name] = await exposeLocalService(service, exposerSocket);
-//             if (removed)
-//                 disposers[service.name]();
-//         } else {
-//             console.log("Got service down announcement", service, "Calling disposer.");
-//             disposers[service.name] && disposers[service.name]();
-//         }
-//     });
-
-// }
 
 
 module.exports = {exposeLocalService, findServicesRemote};
