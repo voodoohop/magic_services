@@ -30,7 +30,7 @@ async function isReachable(service) {
             return true;
         await sleep.sleep(timeout);
         timeout *= 2;
-        console.log("Service",service.name,"not reachable. Increased timeout to",timeout);
+        console.log("Service",service.name,{host:service.host, port: service.port }, "not reachable. Increased timeout to",timeout);
     }
 
     return false;
