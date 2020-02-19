@@ -52,7 +52,7 @@ serverSocket.on('connection', socket => {
         console.log("Publishing existing service",service, "to", socket.id);
         socket.emit("publishService",service);
       })
-   })
+   });
 
     
 
