@@ -35,7 +35,7 @@ serverSocket.on('connection', socket => {
 
         socket.broadcast.emit("unpublishService", serviceDescription);
    })
-
+   const socketId = socket.id;
    socket.on("disconnect", () => {
        console.log("Forwarder disconnected. Unpublishing his services.")
        values(services).forEach(({ service, socket }) => {
