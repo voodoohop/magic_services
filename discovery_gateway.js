@@ -48,7 +48,7 @@ serverSocket.on('connection', socket => {
    })
 
    values(services).forEach(({service}) => { 
-   
+     console.log("Publishing existing service",service,"to",socket.id);
      socket.emit("publishService",service);
    })
     
