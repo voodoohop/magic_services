@@ -12,7 +12,7 @@ const serverSocket = io.listen(PORT);
 
 let services = {};
 
-serverSocket.on('connection', async socket => {
+serverSocket.on('connection', socket => {
 
     console.log("Connection from client", socket.id);
     socket.on("getFreePort", async callback => callback(await getPortPromise({port: random(5000,65000), stopPort: 65535 })));
@@ -47,7 +47,10 @@ serverSocket.on('connection', async socket => {
        });
    })
 
-   values(services).forEach(service => socket.emit("publishService",service));
+   values(services).forEach(({service}) => { 
+   
+     socket.emit("publishService",service);
+   })
     
 
 });
