@@ -1,8 +1,9 @@
 
 const  { publishService, findServiceOnce } = require("./discovery");
-const {autoexpose, AUTOEXPOSER_SERVICE_TYPE} = require("./discovery_autoexpose");
 const nodeCleanup = require('node-cleanup');
 const openBrowser = require('opn');
+const visServer = require("./visualizer/server");
+const sleep = require('sleep-async')().Promise;
 
 console.log('called directly');
 const program = require('commander');
@@ -10,8 +11,8 @@ const program = require('commander');
 program
     .option('--expose <name@host:port>', 'Expose local service')
     .option('--expose-metadata <metadata>', 'Metadata in the form.')
-    .option('--no-autoexpose', 'Don\'t start an EC2-based exposer proxy.', false)
-    .option('--launch-visualizer', 'Open the network\'s service visualizer in the browser.', false)
+    .option('--no-expose', 'Don\'t expose remotely.', false)
+    .option('--launch-visualizer [port]', 'Open the network\'s service visualizer in the browser.', 9999)
     .outputHelp()
 program.parse(process.argv);
 
@@ -19,24 +20,21 @@ program.parse(process.argv);
 
 console.log("Arguments", program.opts());
 
-if (program.autoexpose)
-    autoexpose();
-
 if (program.expose) {
     console.log("Exposing...");
     exposeService(program);
 }
     
 if (program.launchVisualizer) {
-    launchVisualizer()
+    launchVisualizer(parseInt(program.launchVisualizer));
 }
 
 
-async function launchVisualizer() {
-   console.log("Looking for visualizer service...");
-   const service = await findServiceOnce({type:AUTOEXPOSER_SERVICE_TYPE}, 20000);
-   console.log("Got visualizer service", service);
-   openBrowser(`http://${service.host}:${service.port}`);
+async function launchVisualizer(port) {
+   console.log("Launching service visualizer on port", port);
+   visServer(port)
+   await sleep.sleep(1000);
+   openBrowser(`http://localhost:${port}`);
 }
 
 async function exposeService(program) {

@@ -26,14 +26,14 @@ serverSocket.on('connection', socket => {
          }
          console.log("Server responded. Publishing to everyone.");
 
-         serverSocket.sockets.emit("publishService", serviceDescription);
+         socket.broadcast.emit("publishService", serviceDescription);
     })
 
     socket.on("unpublishService", serviceDescription =>{
         delete services[serviceDescription.name];
         console.log("Received service publish", serviceDescription);
 
-        serverSocket.sockets.emit("unpublishService", serviceDescription);
+        socket.broadcast.emit("unpublishService", serviceDescription);
    })
 
    socket.on("disconnect", () => {
@@ -42,7 +42,7 @@ serverSocket.on('connection', socket => {
          if (socketId === socket.id) {
 
              console.log("Sending unpublish of", service)
-             serverSocket.sockets.emit("unpublishService", service);
+             socket.broadcast.emit("unpublishService", service);
          }
        });
    })

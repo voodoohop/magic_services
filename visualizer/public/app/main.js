@@ -45,7 +45,7 @@ $(function () {
       })
 
       services.forEach(function (item) {
-        var host_id = item.addresses.join('，') + item.host;
+        var host_id = item.host;
 
         var host = {
           id: host_id,
@@ -66,12 +66,12 @@ $(function () {
 
         }
 
-        var app_id = item.fullname;
+        var app_id = item.name;
         console.log(toTable(item.txtRecord))
         var app = {
           id: app_id,
-          label: item.txtRecord.type + ":" + item.port,
-          title: toTable(item.txtRecord),
+          label: item.type + ":" + item.port,
+          title: toTable(item.txt),
           shape: "box",
           color: item.port == 9 ? "#eee" : "#aaa"
         }

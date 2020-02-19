@@ -99,7 +99,7 @@ function findServicesLocal({ type,  local = false, onlyMaestron=true }, callback
     browser.on('serviceDown', function(service) {
         
         console.log("serviceDown",service);
-        const formatted = _formatService(services[service.name] ||  _formatService(service));
+        const formatted = _formatService(service);
         if (type && !(formatted.type === type))
           return;
         console.log("service down: ", formatted.name);

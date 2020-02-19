@@ -5,7 +5,7 @@ const { homedir } = require("os");
 const path = require("path");
 const nodeCleanup = require('node-cleanup');
 const sleep = require('sleep-async')().Promise;
-const visServer = require("./visualizer/server");
+
 
 const { findServices, publishService, findServiceOnce } = require("./discovery");
 const {isReachable} = require("./helpers");
