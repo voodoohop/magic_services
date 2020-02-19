@@ -36,5 +36,5 @@ async function isReachable(service) {
     return false;
 }
 
-module.exports = {identityTransformer,log, pipe,  notNull, drain,pipe2, isReachable};
+module.exports = {identityTransformer,log, pipe,  notNull, pipe2, isReachable};
 
