@@ -21,8 +21,10 @@ const REVERSE_SSH_KEYFILE = path.join(homedir(), "credentials", "ec2_model_super
 
 const AUTOEXPOSER_SERVICE_TYPE = "autoServiceExposer";
 
+const exposerSocket = io(`http://${GATEWAY_HOST}:${GATEWAY_PORT}`);
 
-async function reverseSSH(localHost, localPort, exposerSocket) {
+
+async function reverseSSH(localHost, localPort) {
 
     const remotePort = await new Promise(resolve => exposerSocket.emit("getFreePort", resolve));
 
@@ -49,128 +51,100 @@ async function reverseSSH(localHost, localPort, exposerSocket) {
 }
 
 
-function exposeRemoteServices(exposerSocket) {
-    let availableUnpublishers = {};
+async function exposeLocalService(service) {
+    const { remotePort, host, dispose:disposeReverseSSH } = await reverseSSH(service.host, service.port, exposerSocket);
+    // const remotePort=21312;
+    const proxiedService = { ...service,txt: {...service.txt, originHost:service.host, originPort: service.port, location: "remote"} ,host: REVERSE_SSH_HOST, port: remotePort, url:`http://${REVERSE_SSH_HOST}:${remotePort}`};
+
+    console.log(`Local service at ${service.host}:${service.port} now available at ${host}:${remotePort}.`);
+    await sleep.sleep(1000);
+    exposerSocket.emit("publishService", proxiedService);
+    return () => {
+        console.log("Disposing of exposed service", proxiedService);
+        console.log("Killing AutoSSH");
+        disposeReverseSSH();
+        exposerSocket.emit("unpublishService", proxiedService);
+    };
+}
+
+
+function findServicesRemote(opts, callback) {
+    const {type} = opts;
     exposerSocket.on("publishService", async service => {
-        console.log("Got remote service announcement", service);
-        if (localServices[service.name] || localServices[service.name + "_remote"]) {
-            console.error("Found", service.name, "locally, Ignoring.");
-            return;
-        }
-        // FIXME: reenable
+        console.log("Received remote service", service);
+
+        
         if (!await isReachable(service)) {
             console.error("service was not reachable. ignoring.", service);
             return;
         }
-        if (availableUnpublishers[service.name])
-          availableUnpublishers[service.name]();
+       
+        const remoteService = _formatRemoteService(service);
         
-        const unpublisher = await publishService({ 
-            type: service.type, 
-            name: service.name + "_remote", 
-            isUnique: false, 
-            host: service.host, 
-            port: service.port,
-            txt: {...service.txt, location:"remote" }
-         });
-        
-        availableUnpublishers[service.name] = unpublisher;
+        console.log("Got remote service:", remoteService);
+        callback({ available: true, service: remoteService });
 
-        console.log("Exposing remote service", service);
     });
     exposerSocket.on("unpublishService", service => {
-        if (!availableUnpublishers[service.name]) {
-            console.error("Received unpublish, but had not tracked any published services of that name.", service);
+        console.log("got unpublish service",service);
+        if (type && !(service.txt.type === type)) {
+            console.log("But types didn't match. Skipping.");
             return;
         }
-        availableUnpublishers[service.name]();
-        delete availableUnpublishers[service.name];
-    });
-    nodeCleanup(() => { 
-        console.log("Cleaning up",keys(availableUnpublishers));
-        values(availableUnpublishers).forEach(unpublish => {    
-        console.log("Unpublishing remote service.");
-        unpublish();
-        })
+        callback({available: false, service: _formatRemoteService(service)})
     });
 }
 
-const http = require('http');
 
-let localServices = {};
-
-function publishLocalServices(exposerSocket) {
-
-    let disposers = {};
-
-    return findServices({}, async ({ available, service }, services) => {
-        // this is a kind of ugly way of telling exposeRemoteServices which local services don't need to be duplicated
-        localServices = services;
-
-        // forward i
-        if (available) {
-            if (service.txt.location === "remote") {
-                console.log(`${service.name}" is tunneled remotely. We don't need to expose it again.`);
-                return;
-            }
-            if (service.txt.noExpose) {
-                console.log(`${service.name}" has noExpose flag set. Ignoring.`);
-                return;
-            }
-            let removed = false;
-            disposers[service.name] = () => { removed = true };
-
-            console.log("Got avalaible service announcement.", service);
-            console.log(`Checking if port "${service.port}" is reachable.`);
-
-            if (!isReachable(service)) {
-                console.log("Port not reachable. Ignoring.");
-                return;
-            }
-            console.log("Exposing service", service);
-            disposers[service.name] = await exposeLocalService(service, exposerSocket);
-            if (removed)
-                disposers[service.name]();
-        } else {
-            console.log("Got service down announcement", service, "Calling disposer.");
-            disposers[service.name] && disposers[service.name]();
-        }
-    });
-
+function _formatRemoteService(service) {
+    return {
+        type: service.type,
+        name: service.name + "_remote",
+        host: service.host,
+        port: service.port,
+        txt: { ...service.txt, location: "remote" }
+    };
 }
 
+// function publishLocalServices(exposerSocket) {
+
+//     let disposers = {};
+
+//     return findServices({}, async ({ available, service }, services) => {
+//         // this is a kind of ugly way of telling exposeRemoteServices which local services don't need to be duplicated
+//         localServices = services;
+
+//         // forward i
+//         if (available) {
+//             if (service.txt.location === "remote") {
+//                 console.log(`${service.name}" is tunneled remotely. We don't need to expose it again.`);
+//                 return;
+//             }
+//             if (service.txt.noExpose) {
+//                 console.log(`${service.name}" has noExpose flag set. Ignoring.`);
+//                 return;
+//             }
+//             let removed = false;
+//             disposers[service.name] = () => { removed = true };
+
+//             console.log("Got avalaible service announcement.", service);
+//             console.log(`Checking if port "${service.port}" is reachable.`);
+
+//             if (!isReachable(service)) {
+//                 console.log("Port not reachable. Ignoring.");
+//                 return;
+//             }
+//             console.log("Exposing service", service);
+//             disposers[service.name] = await exposeLocalService(service, exposerSocket);
+//             if (removed)
+//                 disposers[service.name]();
+//         } else {
+//             console.log("Got service down announcement", service, "Calling disposer.");
+//             disposers[service.name] && disposers[service.name]();
+//         }
+//     });
+
+// }
 
 
-async function testIfAlreadyRunning() {
-    const exposerSocket = io(`http://${GATEWAY_HOST}:${GATEWAY_PORT}`);
-
-
-    while (true) {
-        let alreadyRunning = false;
-        try {
-            await findServiceOnce({type: AUTOEXPOSER_SERVICE_TYPE});
-            alreadyRunning = true;
-        } catch(e) {
-            console.log("Find service timed out.");
-        }
-        if (!alreadyRunning) {
-            console.log("No autoexposer found. Spinning up.");
-            visServer(9999);
-            const unpublish = await publishService({type: AUTOEXPOSER_SERVICE_TYPE, port:9999, isUnique:false, txt: {noExpose: true}});
-            let stopAutoExpose = publishLocalServices(exposerSocket);
-            exposeRemoteServices(exposerSocket);
-
-            nodeCleanup(unpublish);
-            exposerSocket.on("reconnect", () => { 
-                stopAutoExpose()
-                stopAutoExpose = publishLocalServices(exposerSocket);
-            })
-            break;
-        } else {
-            console.log("Autoexpose service already running. Checking again in 10 minutes.");
-        }
-        await sleep.sleep(10*60*1000)
-    }   
-};
-
-module.exports = {autoexpose:testIfAlreadyRunning, AUTOEXPOSER_SERVICE_TYPE};
+module.exports = {exposeLocalService, findServicesRemote};

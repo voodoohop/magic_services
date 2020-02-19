@@ -5,7 +5,7 @@ const os = require("os");
 const bonjour = require('bonjour')();
 const mdns = require("mdns");
 const {get_private_ip} = require("network");
-
+const {exposeLocalService, findServicesRemote} = require("./discovery_remote");
 // 1 hour default time-to-live
 const DEFAULT_TTL = 60 * 60 * 1000;
 const MAESTRON_SERVICE_TYPE = "bakeryservice";
@@ -13,10 +13,6 @@ const MAESTRON_SERVICE_TYPE = "bakeryservice";
 const localHost = _formatHost(os.hostname());
 
 console.log("Local host name", localHost);
-const unpublishers = [];
-
-nodeCleanup(_unpublish);
-
 
 
 /**
@@ -38,7 +34,7 @@ async function publishService(params) {
 
     // const publishParams = { name, type, port,  txt };
 
-    const txtRecord = {...txt, type};
+    txt = {...txt, type};
 
     console.log("Publishing", type, name, port, txt);
 
@@ -47,27 +43,29 @@ async function publishService(params) {
     console.log("Starting new advertisement with type", type);
 
     //advertisement = bonjour.publish({name, type:MAESTRON_SERVICE_TYPE, port, txt: {type}})// 
-    const advertisement = mdns.createAdvertisement(["http","tcp", MAESTRON_SERVICE_TYPE], port,{ name, txtRecord, host, networkInterface: localIp});
+    const advertisement = mdns.createAdvertisement(["http","tcp", MAESTRON_SERVICE_TYPE], port,{ name, txtRecord:txt, host, networkInterface: localIp});
     advertisement.start();
-
+    const unexpose = await exposeLocalService({type, name, host, port, txt});
 
 
     const unpublish = () => {
         console.log("Unpublishing service", name);
         advertisement.stop();
+        unexpose();
         clearInterval(intervalHandle);
     }
 
     // Re-publish repeatedly
-    const intervalHandle = setInterval(async () => {
+    const intervalHandle = setTimeout(async () => {
         console.log("Republishing service.");
         unpublish();
         await publishService(params);
     }, DEFAULT_TTL);
 
 
-    unpublishers.push(unpublish);
-    return  unpublish;
+    nodeCleanup(unpublish);
+
+    return unpublish;
 }
 
 /**
@@ -86,7 +84,6 @@ function findServicesLocal({ type,  local = false, onlyMaestron=true }, callback
         serviceType.push(MAESTRON_SERVICE_TYPE);
 
     var browser = mdns.createBrowser(serviceType);
-    let services= {};
     browser.on('serviceUp', function(service) {
         if (local && !_isLocal(service))
           return;
@@ -95,8 +92,7 @@ function findServicesLocal({ type,  local = false, onlyMaestron=true }, callback
             return;
         
         console.log("service up: ", service);
-        services[service.name] = service;
-        callback({available: true, service:_formatService(service)},services);
+        callback({available: true, service:_formatService(service)});
         
     });
 
@@ -107,8 +103,7 @@ function findServicesLocal({ type,  local = false, onlyMaestron=true }, callback
         if (type && !(formatted.type === type))
           return;
         console.log("service down: ", formatted.name);
-        delete services[service.name];
-        callback({available: false, service: formatted}, services);
+        callback({available: false, service: formatted});
         
     });
 
@@ -118,7 +113,26 @@ function findServicesLocal({ type,  local = false, onlyMaestron=true }, callback
 }
 
 function findServices(opts, callback) {
-    return findServicesLocal(opts, callback);
+    let localServices = {};
+    let remoteServices = {};
+
+    findServicesLocal(opts, ({available, service}) => {
+        if (available)
+            localServices[service.name] = service;
+        else
+            delete localServices[service.name];
+        callback({available, service}, {...remoteServices, ...localServices});
+    });
+
+    findServicesRemote(opts, ({available, service}) => {
+        if (available)
+            remoteServices[service.name] = service;
+        else
+            delete remoteServices[service.name];
+        
+        if (!localServices[service.name])
+            callback({available, service}, {...remoteServices, ...localServices});
+    });
 }
 
 /**
@@ -159,16 +173,6 @@ function _formatHost(host) {
     if (host.toLowerCase() === "localhost") 
         return localHost;
     return host.replace(/\.$/, "").replace(".fritz.box", ".local");
-}
-
-async function _unpublish() {
-    console.log("unpublishing");
-    try {
-        unpublishers.forEach(u => u());
-    } catch (e) {
-        console.error("Couldn't unpublish but continuing.");
-        console.error(e);
-    }
 }
 
 
