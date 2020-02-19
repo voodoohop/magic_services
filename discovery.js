@@ -6,6 +6,7 @@ const mdns = require("mdns");
 const {get_private_ip} = require("network");
 const {exposeLocalService, findServicesRemote} = require("./discovery_remote");
 const {isReachable} = require("./helpers");
+const sleep = require('sleep-async')().Promise;
 
 // 2 minute health check
 const HEALTH_CHECK_INTERVAL = 2 * 60 * 1000;
@@ -28,6 +29,8 @@ async function publishService(params) {
     
     let {type, name = null, isUnique = true, host = localHost, port=null, txt={}}  = params;
     
+    host = _formatHost(host);
+
     if (name === null)
         name = `${type}`;
     if (isUnique)
@@ -122,7 +125,7 @@ function findServicesLocal({ type,  local = false, onlyMaestron=true }, callback
     return browser.stop;
 }
 
-function findServices(opts, callback) {
+async function findServices(opts, callback) {
     let localServices = {};
     let remoteServices = {};
 
@@ -133,6 +136,9 @@ function findServices(opts, callback) {
             delete localServices[service.name];
         callback({available, service}, {...remoteServices, ...localServices});
     });
+    
+    // Give local services a small headstart. they will override remote services of the same name
+    await sleep.sleep(1000);
 
     findServicesRemote(opts, ({available, service}) => {
         if (available)
