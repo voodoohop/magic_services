@@ -25,7 +25,7 @@ const objectEqual = (o1, o2) => JSON.stringify(o1) == JSON.stringify(o2);
 async function isReachable(service) {
     console.log("Checking if port reachable.");
     let timeout=2500;
-    while (timeout<80000) {
+    while (timeout < 10*60*1000) {
         if (await isPortReachable(service.port, { host: service.host , timeout }))
             return true;
         await sleep.sleep(timeout);
