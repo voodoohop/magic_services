@@ -90,16 +90,17 @@ function findServicesRemote(opts, callback) {
     const {type} = opts;
     exposerSocket.on("publishService", async service => {
         console.log("Received remote service", service);
-
-        if (!await isReachable(service)) {
-            console.error("service was not reachable. ignoring.", service);
-            return;
-        }
-       
-        const remoteService = _formatRemoteService(service);
+        if (type && !(service.txt.type === type)) {
+            if (!await isReachable(service)) {
+                console.error("service was not reachable. ignoring.", service);
+                return;
+            }
         
-        console.log("Got remote service:", remoteService);
-        callback({ available: true, service: remoteService });
+            const remoteService = _formatRemoteService(service);
+            
+            console.log("Got remote service:", remoteService);
+            callback({ available: true, service: remoteService });
+        }
 
     });
     exposerSocket.on("unpublishService", service => {
