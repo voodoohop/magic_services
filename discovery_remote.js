@@ -4,8 +4,6 @@ const autossh = require('autossh');
 const { homedir } = require("os");
 const path = require("path");
 const nodeCleanup = require('node-cleanup');
-const isPortReachable = require('is-port-reachable');
-const portfinder = require('portfinder');
 const sleep = require('sleep-async')().Promise;
 const visServer = require("./visualizer/server");
 
@@ -48,22 +46,6 @@ async function reverseSSH(localHost, localPort, exposerSocket) {
             });
         nodeCleanup(() => autoSSHClient.kill());
     });
-}
-
-async function exposeLocalService(service, exposerSocket) {
-    const { remotePort, host, dispose:disposeReverseSSH } = await reverseSSH(service.host, service.port, exposerSocket);
-    // const remotePort=21312;
-    const proxiedService = { ...service,txt: {...service.txt, originHost:service.host, originPort: service.port, location: "remote"} ,host: REVERSE_SSH_HOST, port: remotePort, url:`http://${REVERSE_SSH_HOST}:${remotePort}`};
-
-    console.log(`Local service at ${service.host}:${service.port} now available at ${host}:${remotePort}.`);
-    await sleep.sleep(1000);
-    exposerSocket.emit("publishService", proxiedService);
-    return () => {
-        console.log("Disposing of exposed service", proxiedService);
-        console.log("Killing AutoSSH");
-        disposeReverseSSH();
-        exposerSocket.emit("unpublishService", proxiedService);
-    };
 }
 
 

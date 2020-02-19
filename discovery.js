@@ -36,9 +36,6 @@ async function publishService(params) {
     if (isUnique)
         name = `${name}_${process.pid}`;
 
-
-
-
     // const publishParams = { name, type, port,  txt };
 
     const txtRecord = {...txt, type};
@@ -81,7 +78,7 @@ async function publishService(params) {
  * @param  {boolean} options.local=true Whether to look only on the local host for services
  * @param  {func} callback Callback which is called any time a new service is found that satistfies the query
  */
-function findServices({ type,  local = false, onlyMaestron=true }, callback) {
+function findServicesLocal({ type,  local = false, onlyMaestron=true }, callback) {
 
     const serviceType = ["http","tcp"];
 
@@ -120,6 +117,9 @@ function findServices({ type,  local = false, onlyMaestron=true }, callback) {
     return browser.stop;
 }
 
+function findServices(opts, callback) {
+    return findServicesLocal(opts, callback);
+}
 
 /**
  * Same as findService but returns a promise that resolves as soon as a service is found that meets the requirements
