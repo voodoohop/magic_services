@@ -88,19 +88,24 @@ async function exposeLocalService(service) {
 
 function findServicesRemote(opts, callback) {
     const {type} = opts;
+    console.log("finding remote services of type", type);
     exposerSocket.on("publishService", async service => {
         console.log("Received remote service", service);
         if (type && !(service.txt.type === type)) {
-            if (!await isReachable(service)) {
-                console.error("service was not reachable. ignoring.", service);
-                return;
-            }
-        
-            const remoteService = _formatRemoteService(service);
-            
-            console.log("Got remote service:", remoteService);
-            callback({ available: true, service: remoteService });
+            console.log("But types didn't match. Skipping. Expected:", type);
+            return;            
         }
+        console.log("Service was of correct type.", type);
+        if (!await isReachable(service)) {
+            console.error("service was not reachable. ignoring.", service);
+            return;
+        }
+    
+        const remoteService = _formatRemoteService(service);
+        
+        console.log("Got remote service:", remoteService);
+        callback({ available: true, service: remoteService });
+
 
     });
     exposerSocket.on("unpublishService", service => {
