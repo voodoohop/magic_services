@@ -27,7 +27,7 @@ async function testCreateService(type,metadata={md:"hello, world"}) {
 }
 
 console.log("looking for accumulated services");
-findAccumulatedServices({}, services => {
+findAccumulatedServices({type:"preprocessor"}, services => {
     console.log("Accumulated", keys(services));
 });
 

@@ -5,6 +5,7 @@ const { homedir } = require("os");
 const path = require("path");
 const nodeCleanup = require('node-cleanup');
 const sleep = require('sleep-async')().Promise;
+const {existsSync} = require("fs")
 
 
 const { findServices, publishService, findServiceOnce } = require("./discovery");
@@ -19,13 +20,20 @@ const REVERSE_SSH_HOST = "ec2-bakerman";
 const REVERSE_SSH_USERNAME = "ubuntu";
 const REVERSE_SSH_KEYFILE = path.join(homedir(), "credentials", "ec2_model_supervisor_key.pem");
 
-const AUTOEXPOSER_SERVICE_TYPE = "autoServiceExposer";
+
 
 const exposerSocket = io(`http://${GATEWAY_HOST}:${GATEWAY_PORT}`);
 
 
 async function reverseSSH(localHost, localPort) {
 
+    if (!existsSync(REVERSE_SSH_KEYFILE)) {
+        console.error("Fatal, no key certificate found in order to start Reverse SSH tunnels.");
+        console.log("This is only required to expose services. We can continue for service discovery.");
+        return {};
+    }
+
+    
     const remotePort = await new Promise(resolve => exposerSocket.emit("getFreePort", localPort, resolve));
 
     return await new Promise((resolve, reject) => {
@@ -53,7 +61,10 @@ async function reverseSSH(localHost, localPort) {
 async function exposeLocalService(service) {
 
     const { remotePort, host, dispose:disposeReverseSSH } = await reverseSSH(service.host, service.port, exposerSocket);
-    // const remotePort=21312;
+
+    if (!host)
+        throw "Couldn't create Reverse SSH connection. Probably because of missing keyfile.";
+
     const proxiedService = { ...service,txt: {...service.txt, originHost:service.host, originPort: service.port, location: "remote"} ,host: REVERSE_SSH_HOST, port: remotePort, url:`http://${REVERSE_SSH_HOST}:${remotePort}`};
 
     console.log(`Local service at ${service.host}:${service.port} now available at ${host}:${remotePort}.`);
@@ -63,7 +74,7 @@ async function exposeLocalService(service) {
     const reemit = () => {
         console.log("Socket reconnected. Republishing");
         exposerSocket.emit("publishService", proxiedService);
-    };
+    }; 
 
     exposerSocket.on("reconnect", reemit);
    
@@ -104,13 +115,11 @@ function findServicesRemote(opts, callback) {
 }
 
 
-function _formatRemoteService(service) {
+function _formatRemoteService({txt,...service}) {
     return {
-        type: service.type,
-        name: service.name,
-        host: service.host,
-        port: service.port,
-        txt: { ...service.txt, location: "remote" }
+        ...service,
+        url: `http://${service.host}:${service.port}`,
+        txt: { ...txt, location: "remote" }
     };
 }
 

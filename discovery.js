@@ -106,14 +106,14 @@ function findServicesLocal({ type,  local = false, onlyMaestron=true }, callback
             return;
         
         console.log("service up: ", service);
-        callback({available: true, service:_formatService(service)});
+        callback({available: true, service:_formatServiceFromBonjour(service)});
         
     });
 
     browser.on('serviceDown', function(service) {
         
         console.log("serviceDown",service);
-        const formatted = _formatService(service);
+        const formatted = _formatServiceFromBonjour(service);
         if (type && !(formatted.type === type))
           return;
         console.log("service down: ", formatted.name);
@@ -142,6 +142,7 @@ async function findServices(opts, callback) {
     await sleep.sleep(1000);
 
     findServicesRemote(opts, ({available, service}) => {
+        service = _formatServiceFromBonjour(service)
         if (available)
             remoteServices[service.name] = service;
         else
@@ -185,7 +186,7 @@ const _isLocal = service => service.host.startsWith(localHost);
 module.exports = { publishService, findServices, findServiceOnce, localHost, findAccumulatedServices };
 
 
-const _formatService = ({name, host, port, txtRecord}) => { 
+const _formatServiceFromBonjour = ({name, host, port, txtRecord}) => { 
     host = host && _formatHost(host);
     return {
         url: `http://${host}:${port}`,

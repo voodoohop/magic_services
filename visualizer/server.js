@@ -5,9 +5,9 @@ var express = require('express');
 var server = require('http').createServer();
 const {dirname} = require("path");
 
-const { findServices } = require("../discovery");
+const { findAccumulatedServices, localHost} = require("../discovery");
 
-const {values} = Object;
+const {values, keys} = Object;
 
 var wss = new WebSocketServer({
   server: server
@@ -29,7 +29,7 @@ app.get('/list.json', function (req, res) {
 
 app.get('/whoami.json', function (req, res) {
   res.json({
-    hostname: os.hostname()
+    hostname: localHost
   });
 });
 
@@ -50,27 +50,25 @@ server.on('listening', function () {
 });
 
 
-process.on('SIGINT', function () {
-  process.exit(0)
-});
+// process.on('SIGINT', function () {
+//   process.exit(0)
+// });
 
-process.on('SIGTERM', function () {
-  process.exit(0)
-});
+// process.on('SIGTERM', function () {
+//   process.exit(0)
+// });
 
 module.exports = port => { 
 
-  findServices({}, async ({ available, service }, servicesObj) => {
-    console.log("found service",service.name, available);
+  findAccumulatedServices({}, async (servicesObj) => {
+    console.log("found services", keys(servicesObj));
     services = values(servicesObj);
+
     wss.clients.forEach(function (client) {
-      console.log('publish_new_service');
-  
-      client.send(JSON.stringify({
-        "type": available ? "new_service":"remove_service",
-        "service": service
-      }));
+      console.log("Refreshing client.");
+      client.send("refresh");
     });
-  });
+  }, 500);
+  
   server.listen(port);
 };
