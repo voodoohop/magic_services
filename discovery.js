@@ -2,12 +2,13 @@
 const portfinder = require('portfinder');
 const nodeCleanup = require('node-cleanup');
 const os = require("os");
-const bonjour = require('bonjour')();
 const mdns = require("mdns");
 const {get_private_ip} = require("network");
 const {exposeLocalService, findServicesRemote} = require("./discovery_remote");
-// 1 hour default time-to-live
-const DEFAULT_TTL = 60 * 60 * 1000;
+const {isReachable} = require("./helpers");
+
+// 2 minute health check
+const HEALTH_CHECK_INTERVAL = 2 * 60 * 1000;
 const MAESTRON_SERVICE_TYPE = "bakeryservice";
 
 const localHost = _formatHost(os.hostname());
@@ -41,11 +42,18 @@ async function publishService(params) {
     const localIp = await new Promise(resolve => get_private_ip((err,ip) => resolve(ip)));
     console.log("Used network to determine local IP", localIp);
     console.log("Starting new advertisement with type", type);
+    
+    const service={type, name, host, port, txt};
+
+    if (! await isReachable(service)) {
+        console.error("Service was not reachable. Abandoning.");
+        return () => null;
+    }
 
     //advertisement = bonjour.publish({name, type:MAESTRON_SERVICE_TYPE, port, txt: {type}})// 
     const advertisement = mdns.createAdvertisement(["http","tcp", MAESTRON_SERVICE_TYPE], port,{ name, txtRecord:txt, host, networkInterface: localIp});
     advertisement.start();
-    const unexpose = await exposeLocalService({type, name, host, port, txt});
+    const unexpose = await exposeLocalService(service);
 
 
     const unpublish = () => {
@@ -57,10 +65,12 @@ async function publishService(params) {
 
     // Re-publish repeatedly
     const intervalHandle = setTimeout(async () => {
-        console.log("Republishing service.");
-        unpublish();
-        await publishService(params);
-    }, DEFAULT_TTL);
+        console.log("Performing health check on service", service);
+        if (! await isReachable(service)) {
+            console.error("Service went offline. Unpublishing.");
+            unpublish();     
+        }
+    }, HEALTH_CHECK_INTERVAL);
 
 
     nodeCleanup(unpublish);
