@@ -8,7 +8,8 @@ const isPortReachable = require('is-port-reachable');
 const portfinder = require('portfinder');
 const http = require('http');
 
-const { publishService,findServices } = require("./index");
+const {keys} = Object;
+const { publishService,findServices, findAccumulatedServices } = require("./index");
 
 
 async function testCreateService(type,metadata={md:"hello, world"}) {
@@ -25,8 +26,11 @@ async function testCreateService(type,metadata={md:"hello, world"}) {
     nodeCleanup(unpublish);
 }
 
-findServices({}, ({available, service}) => {
-    console.log(available, service);
+console.log("looking for accumulated services");
+findAccumulatedServices({}, services => {
+    console.log("Accumulated", keys(services));
 });
 
 testCreateService(process.argv[2] || "testservice", {dataset_name: "cello_viola", run_id:1234} );
+
+

@@ -7,6 +7,7 @@ const {get_private_ip} = require("network");
 const {exposeLocalService, findServicesRemote} = require("./discovery_remote");
 const {isReachable} = require("./helpers");
 const sleep = require('sleep-async')().Promise;
+const {debounce} = require("lodash");
 
 // 2 minute health check
 const HEALTH_CHECK_INTERVAL = 2 * 60 * 1000;
@@ -151,6 +152,16 @@ async function findServices(opts, callback) {
     });
 }
 
+async function findAccumulatedServices(opts, callback, debounceTime=5000) {
+
+    const debouncedServicesCallback = 
+    debounce(
+        (_, services) => callback(services)
+    , debounceTime);
+
+    findServices(opts, debouncedServicesCallback)
+}
+
 /**
  * Same as findService but returns a promise that resolves as soon as a service is found that meets the requirements
  * @param  {} options
@@ -171,7 +182,7 @@ const _isLocal = service => service.host.startsWith(localHost);
 
 
 
-module.exports = { publishService, findServices, findServiceOnce, localHost };
+module.exports = { publishService, findServices, findServiceOnce, localHost, findAccumulatedServices };
 
 
 const _formatService = ({name, host, port, txtRecord}) => { 
