@@ -106,22 +106,22 @@ function exposeRemoteServices(exposerSocket) {
     });
     nodeCleanup(() => { 
         console.log("Cleaning up",keys(availableUnpublishers));
-        values(availableUnpublishers).forEach(unpublish => {  
+        values(availableUnpublishers).forEach(unpublish => {    
         console.log("Unpublishing remote service.");
         unpublish();
-    })
-});
+        })
+    });
 }
 
 const http = require('http');
 
 let localServices = {};
 
-async function publishLocalServices(exposerSocket) {
+function publishLocalServices(exposerSocket) {
 
     let disposers = {};
 
-    findServices({}, async ({ available, service }, services) => {
+    return findServices({}, async ({ available, service }, services) => {
         // this is a kind of ugly way of telling exposeRemoteServices which local services don't need to be duplicated
         localServices = services;
 
@@ -157,8 +157,12 @@ async function publishLocalServices(exposerSocket) {
 
 }
 
+
+
 async function testIfAlreadyRunning() {
     const exposerSocket = io(`http://${GATEWAY_HOST}:${GATEWAY_PORT}`);
+
+
     while (true) {
         let alreadyRunning = false;
         try {
@@ -171,9 +175,14 @@ async function testIfAlreadyRunning() {
             console.log("No autoexposer found. Spinning up.");
             visServer(9999);
             const unpublish = await publishService({type: AUTOEXPOSER_SERVICE_TYPE, port:9999, isUnique:false, txt: {noExpose: true}});
-            publishLocalServices(exposerSocket);
+            let stopAutoExpose = publishLocalServices(exposerSocket);
             exposeRemoteServices(exposerSocket);
+
             nodeCleanup(unpublish);
+            exposerSocket.on("reconnect", () => { 
+                stopAutoExpose()
+                stopAutoExpose = publishLocalServices(exposerSocket);
+            })
             break;
         } else {
             console.log("Autoexpose service already running. Checking again in 10 minutes.");
