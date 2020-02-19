@@ -4,6 +4,7 @@ const nodeCleanup = require('node-cleanup');
 const {random} = require("lodash");
 const {values, keys, entries} = Object;
 const {isReachable} = require("./helpers");
+const {mapValues} = require("lodash");
 
 const PORT = 4321;
 
@@ -52,5 +53,5 @@ serverSocket.on('connection', async socket => {
 
 function broadcastServiceUpdate() {
     // FIXME: should not emit to originator
-    serverSocket.sockets.emit("services", services.map(({service}) => service));
+    serverSocket.sockets.emit("services", mapValues(services, ({service}) => service));
 }
