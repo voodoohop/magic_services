@@ -12,7 +12,7 @@ program
     .option('--expose <name@host:port>', 'Expose local service')
     .option('--expose-metadata <metadata>', 'Metadata in the form.')
     .option('--no-expose', 'Don\'t expose remotely.', false)
-    .option('--launch-visualizer [port]', 'Open the network\'s service visualizer in the browser.', 9999)
+    .option('--launch-visualizer [port]', 'Launch the visualizer service and and open it in the browser.')
     .outputHelp()
 program.parse(process.argv);
 
