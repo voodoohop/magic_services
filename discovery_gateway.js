@@ -58,3 +58,11 @@ serverSocket.on('connection', socket => {
 
 });
 
+nodeCleanup(() => {
+  console.log("Cleanup. Unpublishing.")
+  values(services).forEach(({ service, socket }) => {
+
+        console.log("Sending unpublish of", service)
+        socket.broadcast.emit("unpublishService", service);
+  });
+})
