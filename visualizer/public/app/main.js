@@ -74,7 +74,7 @@ $(function () {
           }
 
           if (remote_host) {
-            host.color = {background: "transparent"};
+            host.color = {background: "transparent",hover:{background: "transparent"}, highlight:{background: "transparent"}};
             host.group = "gateway";
           }
 
