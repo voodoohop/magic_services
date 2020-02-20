@@ -40,12 +40,13 @@ serverSocket.on('connection', socket => {
        console.log("Forwarder disconnected. Unpublishing his services.")
        values(services).forEach(({ service, socket }) => {
          if (socketId === socket.id) {
-
+             delete services[service.name]
              console.log("Sending unpublish of", service)
              socket.broadcast.emit("unpublishService", service);
          }
        });
    });
+
 
    socket.on("sendServices", () => {
       values(services).forEach(({service}) => { 
