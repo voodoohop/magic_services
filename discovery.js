@@ -131,7 +131,7 @@ async function findServices(opts, callback) {
     let localServices = {};
     let remoteServices = {};
 
-    findServicesLocal(opts, ({available, service}) => {
+    const stopLocal = findServicesLocal(opts, ({available, service}) => {
         if (available)
             localServices[service.name] = service;
         else
@@ -142,7 +142,7 @@ async function findServices(opts, callback) {
     // Give local services a small headstart. they will override remote services of the same name
     await sleep.sleep(1000);
 
-    findServicesRemote(opts, ({available, service}) => {
+    const stopRemote = findServicesRemote(opts, ({available, service}) => {
         if (available)
             remoteServices[service.name] = service;
         else
@@ -151,28 +151,37 @@ async function findServices(opts, callback) {
         if (!localServices[service.name])
             callback({available, service}, {...remoteServices, ...localServices});
     });
+
+    return () => {
+        stopRemote();
+        stopLocal();
+    }
 }
 
 async function findAccumulatedServices(opts, callback, debounceTime=3000) {
 
     const debouncedServicesCallback = debounce(callback, debounceTime);
 
-    findServices(opts, (_, services) => {
+    const stop = await findServices(opts, (_, services) => {
         console.log("found accumulated services", keys(services));
         debouncedServicesCallback(services)
     })
+
+    return stop;
 }
 
 /**
  * Same as findService but returns a promise that resolves as soon as a service is found that meets the requirements
  * @param  {} options
  */
-function findServiceOnce(options,timeout=1000) {
+function findServiceOnce(options,timeout=30000) {
     return _promiseTimeout(timeout, new Promise(resolve => {
-        const stop = findServices(options, ({available,service}) => {
+        console.log("Finding once",options,"with timeout", timeout);
+        const stop = findServices(options, async ({available,service}) => {
             if (available) {
+                console.log("Found service", service);
                 resolve(service);
-                stop();
+                (await stop)();
             }
         })
     }));
