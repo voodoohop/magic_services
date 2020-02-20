@@ -97,7 +97,8 @@ $(function () {
                 from: remote_host.id,
                 to: host_id,
                 label:null,
-                dashes: true
+                dashes: true,
+                length: 300
               });   
             }
 
