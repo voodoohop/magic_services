@@ -1,5 +1,11 @@
+let mdns = null;
+try {
+  mdns = require("mdns");
+}
+catch (e) {
+  console.error("Problem: Multicast DNS not available. Can use remote exposing though. ");
+}
 
-const mdns = require("mdns");
 const os = require("os");
 const {get_private_ip} = require("network");
 const {formatHost} = require("./helpers");

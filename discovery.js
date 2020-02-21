@@ -10,6 +10,15 @@ const {debounce} = require("lodash");
 
 const {keys} = Object;
 
+let mdnsAvailable = false;
+try {
+    require("mdns");
+    mdnsAvailable = true;
+}
+catch (e) {
+  console.error("Problem: Multicast DNS not available. Can use remote exposing and browsing though. ");
+}
+
 // 2 minute health check
 const HEALTH_CHECK_INTERVAL = 2 * 60 * 1000;
 
@@ -29,6 +38,7 @@ console.log("Local host name", localHost);
  */
 async function publishService({type, name = null, isUnique = true, host = localHost, port=null, txt={}, local=true, remote=true} ) {
     
+    local = local && mdnsAvailable;
     host = formatHost(host);
 
     if (name === null)
@@ -78,7 +88,9 @@ async function publishService({type, name = null, isUnique = true, host = localH
 
 async function findServices(opts, callback) {
     
-    const {local=true, remote = true} = opts;
+    let {local=true, remote = true} = opts;
+
+    local = local && mdnsAvailable;
 
     let localServices = {};
     let remoteServices = {};

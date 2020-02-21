@@ -19,10 +19,8 @@
   "homepage": "https://github.com/Pixtunes/magic_services#readme",
   "dependencies": {
     "autossh": "^0.2.0",
-    "bonjour": "^3.5.0",
     "is-port-reachable": "^3.0.0",
     "is-reachable": "^4.0.0",
-    "mdns": "^2.5.1",
     "network": "^0.4.1",
     "node-cleanup": "^2.1.2",
     "opn": "^6.0.0",
@@ -36,6 +34,9 @@
     "vis": "^4.15.1",
     "ws": "^1.0.1",
     "yargs": "^4.2.0"
+  },
+  "optionalDependencies": {
+    "mdns": "^2.5.1"
   },
   "bin": {
     "expose": "./bin/expose"
