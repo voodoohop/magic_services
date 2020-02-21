@@ -11,8 +11,9 @@ const program = require('commander');
 program
     .option('--expose <name@host:port>', 'Expose local service')
     .option('--expose-metadata <metadata>', 'Metadata in the form.')
-    .option('--no-expose', 'Don\'t expose remotely.', false)
     .option('--launch-visualizer [port]', 'Launch the visualizer service and and open it in the browser.')
+    .option('--no-local',"Don't expose or search on local network via multicast DNS / Bonjour.", false)
+    .option('--no-remote',"Don't expose or search for remote services.", false)
     .outputHelp()
 program.parse(process.argv);
 
@@ -26,13 +27,13 @@ if (program.expose) {
 }
     
 if (program.launchVisualizer) {
-    launchVisualizer(parseInt(program.launchVisualizer));
+    launchVisualizer({remote: program.remote, local: program.local, port:parseInt(program.launchVisualizer)});
 }
 
 
-async function launchVisualizer(port) {
+async function launchVisualizer({remote,local,port}) {
    console.log("Launching service visualizer on port", port);
-   visServer(port)
+   visServer({remote,local,port});
    await sleep.sleep(1000);
    openBrowser(`http://localhost:${port}`);
 }
@@ -48,7 +49,7 @@ async function exposeService(program) {
             metadata[key] = value;
         });
     }
-    const service = { type, port: parseInt(port), host, txt: metadata };
+    const service = { type, port: parseInt(port), host, txt: metadata, remote: program.remote, local: program.local };
     console.log("Publishing", service);
     const unpublish = await publishService(service);
     nodeCleanup(unpublish);

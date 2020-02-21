@@ -2,10 +2,9 @@
 const portfinder = require('portfinder');
 const nodeCleanup = require('node-cleanup');
 const os = require("os");
-const mdns = require("mdns");
-const {get_private_ip} = require("network");
-const {exposeLocalService, findServicesRemote} = require("./discovery_remote");
-const {isReachable} = require("./helpers");
+const {exposeRemotely, findServicesRemote} = require("./discovery_remote");
+const {exposeLocally, findServicesLocal} = require("./discovery_local");
+const {isReachable, promiseTimeout, formatHost} = require("./helpers");
 const sleep = require('sleep-async')().Promise;
 const {debounce} = require("lodash");
 
@@ -13,9 +12,9 @@ const {keys} = Object;
 
 // 2 minute health check
 const HEALTH_CHECK_INTERVAL = 2 * 60 * 1000;
-const MAESTRON_SERVICE_TYPE = "bakeryservice";
 
-const localHost = _formatHost(os.hostname());
+
+const localHost = formatHost(os.hostname());
 
 console.log("Local host name", localHost);
 
@@ -28,11 +27,9 @@ console.log("Local host name", localHost);
  * @param  {} serviceDescription.type The service type. This is used for discovery.
  * @param  {} serviceDescription.txt Additional metadata to pass in the DNS TXT field
  */
-async function publishService(params) {
+async function publishService({type, name = null, isUnique = true, host = localHost, port=null, txt={}, local=true, remote=true} ) {
     
-    let {type, name = null, isUnique = true, host = localHost, port=null, txt={}}  = params;
-    
-    host = _formatHost(host);
+    host = formatHost(host);
 
     if (name === null)
         name = `${type}`;
@@ -44,10 +41,6 @@ async function publishService(params) {
     txt = {...txt, type};
 
     console.log("Publishing", type, name, port, txt);
-
-    const localIp = await new Promise(resolve => get_private_ip((err,ip) => resolve(ip)));
-    console.log("Used network to determine local IP", localIp);
-    console.log("Starting new advertisement with type", type);
     
     const service={type, name, host, port, txt};
 
@@ -57,16 +50,14 @@ async function publishService(params) {
         return () => null;
     }
 
-    //advertisement = bonjour.publish({name, type:MAESTRON_SERVICE_TYPE, port, txt: {type}})// 
-    const advertisement = mdns.createAdvertisement(["http","tcp", MAESTRON_SERVICE_TYPE], port,{ name, txtRecord:txt, host, networkInterface: localIp});
-    advertisement.start();
-    const unexpose = await exposeLocalService(service);
-
+    const unexposeRemote = remote && await exposeRemotely(service);
+    const unexposeLocal = local && await exposeLocally(service);
 
     const unpublish = () => {
         console.log("Unpublishing service", name);
-        advertisement.stop();
-        unexpose();
+
+        local && unexposeLocal();
+        remote && unexposeRemote();
         clearInterval(intervalHandle);
     }
 
@@ -85,53 +76,15 @@ async function publishService(params) {
     return unpublish;
 }
 
-/**
- * find a service that matches the given type.
- * @param  {} options options
- * @param  {string} options.type The type of service
- * @param  {object} options.txt Metadata
- * @param  {boolean} options.local=true Whether to look only on the local host for services
- * @param  {func} callback Callback which is called any time a new service is found that satistfies the query
- */
-function findServicesLocal({ type,  local = false, onlyMaestron=true }, callback) {
-
-    const serviceType = ["http","tcp"];
-
-    if (onlyMaestron)
-        serviceType.push(MAESTRON_SERVICE_TYPE);
-
-    var browser = mdns.createBrowser(serviceType);
-
-    browser.on('serviceUp', function(service) {
-        if (local && !_isLocal(service))
-          return;
-        // console.log("checking service.txtRecord.type", service.txtRecord.type, type)
-        if (type && !(service.txtRecord.type === type)) 
-            return;
-        
-        console.log("service up: ", service);
-        callback({available: true, service:_formatServiceFromBonjour(service)});
-    });
-
-    browser.on('serviceDown', function(service) {
-        console.log("serviceDown",service);
-        const formatted = _formatServiceFromBonjour(service);
-        if (type && !(formatted.type === type))
-          return;
-        console.log("Service down: ", formatted.name);
-        callback({available: false, service: formatted}); 
-    });
-
-    browser.start();
-
-    return browser.stop;
-}
-
 async function findServices(opts, callback) {
+    
+    const {local=true, remote = true} = opts;
+
     let localServices = {};
     let remoteServices = {};
 
-    const stopLocal = findServicesLocal(opts, ({available, service}) => {
+    
+    const stopLocal = local && findServicesLocal(opts, ({available, service}) => {
         if (available)
             localServices[service.name] = service;
         else
@@ -142,7 +95,7 @@ async function findServices(opts, callback) {
     // Give local services a small headstart. they will override remote services of the same name
     await sleep.sleep(1000);
 
-    const stopRemote = findServicesRemote(opts, ({available, service}) => {
+    const stopRemote = remote && findServicesRemote(opts, ({available, service}) => {
         if (available)
             remoteServices[service.name] = service;
         else
@@ -153,8 +106,8 @@ async function findServices(opts, callback) {
     });
 
     return () => {
-        stopRemote();
-        stopLocal();
+        stopRemote && stopRemote();
+        stopLocal && stopLocal();
     }
 }
 
@@ -175,7 +128,7 @@ async function findAccumulatedServices(opts, callback, debounceTime=3000) {
  * @param  {} options
  */
 function findServiceOnce(options,timeout=30000) {
-    return _promiseTimeout(timeout, new Promise(resolve => {
+    return promiseTimeout(timeout, new Promise(resolve => {
         console.log("Finding once",options,"with timeout", timeout);
         const stop = findServices(options, async ({available,service}) => {
             if (available) {
@@ -188,48 +141,5 @@ function findServiceOnce(options,timeout=30000) {
 }
 
 
-const _isLocal = service => service.host.startsWith(localHost);
-
-
 
 module.exports = { publishService, findServices, findServiceOnce, localHost, findAccumulatedServices };
-
-
-const _formatServiceFromBonjour = ({name, host, port, txtRecord}) => { 
-    host = host && _formatHost(host);
-    return {
-        url: `http://${host}:${port}`,
-        host, port, txt:txtRecord,
-        name,
-        type: (txtRecord && txtRecord.type) || undefined
-    };
-}
-
-
-function _formatHost(host) {
-    if (host.toLowerCase() === "localhost") {
-        host = os.hostname();
-    }
-    host = host.replace(/\.$/, "").replace(".fritz.box", ".local");
-    if (!host.includes(".")) {
-        host = host + ".local";
-    }
-    return host;
-}
-
-
-const _promiseTimeout = function(ms, promise){
-
-    // Create a promise that rejects in <ms> milliseconds
-    let timeout = new Promise((resolve, reject) => {
-      let id = setTimeout(() => {
-        clearTimeout(id);
-        reject('Timed out in '+ ms + 'ms.')
-      }, ms)
-    })
-    return Promise.race([
-        promise,
-        timeout
-      ])
-}
-  

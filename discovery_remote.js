@@ -56,7 +56,7 @@ async function reverseSSH(localHost, localPort) {
     });
 }
 
-async function exposeLocalService(service) {
+async function exposeRemotely(service) {
 
     const { remotePort, host, dispose:disposeReverseSSH } = await reverseSSH(service.host, service.port, exposerSocket);
 
@@ -136,4 +136,4 @@ function _formatRemoteService({txt,...service}) {
 }
 
 
-module.exports = {exposeLocalService, findServicesRemote};
+module.exports = {exposeRemotely, findServicesRemote};

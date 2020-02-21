@@ -41,5 +41,33 @@ async function isReachable(service, max_timeout_seconds = DEFAULT_MAX_REACHABLE_
     return false;
 }
 
-module.exports = {identityTransformer,log, pipe, notNull, pipe2, isReachable};
+
+function formatHost(host) {
+    if (host.toLowerCase() === "localhost") {
+        host = os.hostname();
+    }
+    host = host.replace(/\.$/, "").replace(".fritz.box", ".local");
+    if (!host.includes(".")) {
+        host = host + ".local";
+    }
+    return host;
+}
+
+const promiseTimeout = function(ms, promise){
+
+    // Create a promise that rejects in <ms> milliseconds
+    let timeout = new Promise((resolve, reject) => {
+      let id = setTimeout(() => {
+        clearTimeout(id);
+        reject('Timed out in '+ ms + 'ms.')
+      }, ms)
+    })
+    return Promise.race([
+        promise,
+        timeout
+      ])
+}
+  
+
+module.exports = {identityTransformer,log, pipe, notNull, pipe2, isReachable, formatHost, promiseTimeout};
 
