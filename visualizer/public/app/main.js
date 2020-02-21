@@ -192,7 +192,10 @@ function _getVisJSOptions() {
       host: {
         shape: "circle",
         // font: "14px verdana white",
-        // color: nodeColors
+        // color: nodeColors,
+        widthConstraint: {
+          minimum: 100
+        }
       },
       gateway: {
         shape: "circle",
