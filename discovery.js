@@ -207,9 +207,14 @@ const _formatServiceFromBonjour = ({name, host, port, txtRecord}) => {
 
 
 function _formatHost(host) {
-    if (host.toLowerCase() === "localhost") 
-        return localHost;
-    return host.replace(/\.$/, "").replace(".fritz.box", ".local");
+    if (host.toLowerCase() === "localhost") {
+        host = os.hostname();
+    }
+    host = host.replace(/\.$/, "").replace(".fritz.box", ".local");
+    if (!host.includes(".")) {
+        host = host + ".local";
+    }
+    return host;
 }
 
 
