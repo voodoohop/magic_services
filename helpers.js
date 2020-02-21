@@ -2,7 +2,7 @@
 const isPortReachable = require('is-port-reachable');
 const portfinder = require('portfinder');
 const sleep = require('sleep-async')().Promise;
-
+const os = require("os");
 
 const { fromEntries, values, keys } = Object;
 
