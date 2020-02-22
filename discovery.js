@@ -46,14 +46,13 @@ async function publishService({type, name = null, isUnique = true, host = localH
     if (isUnique)
         name = `${name}_${process.pid}`;
 
-    // const publishParams = { name, type, port,  txt };
-
     txt = {...txt, type};
 
-    console.log("Publishing", type, name, port, txt);
-    
+
     const service={type, name, host, port, txt};
 
+    console.log("Publishing", service);
+    
     // 10 minute timeout in case service takes a long time to start up
     if (! await isReachable(service, 60*10)) {
         console.error("Service was not reachable. Abandoning.");
@@ -65,7 +64,6 @@ async function publishService({type, name = null, isUnique = true, host = localH
 
     const unpublish = () => {
         console.log("Unpublishing service", name);
-
         local && unexposeLocal();
         remote && unexposeRemote();
         clearInterval(intervalHandle);

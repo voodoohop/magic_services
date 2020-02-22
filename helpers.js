@@ -22,7 +22,7 @@ const notNull = o => o != null;
 
 const objectEqual = (o1, o2) => JSON.stringify(o1) == JSON.stringify(o2);
 
-// Default to 2 minute max timeout
+// Default to 90 second max timeout to determine if a service is reachable
 const DEFAULT_MAX_REACHABLE_TIMEOUT = 90;
 
 async function isReachable(service, max_timeout_seconds = DEFAULT_MAX_REACHABLE_TIMEOUT) {
@@ -53,7 +53,7 @@ function formatHost(host) {
     return host;
 }
 
-const promiseTimeout = function(ms, promise){
+const promiseTimeout = function(ms, promise) {
 
     // Create a promise that rejects in <ms> milliseconds
     let timeout = new Promise((resolve, reject) => {
@@ -68,6 +68,11 @@ const promiseTimeout = function(ms, promise){
       ])
 }
   
+const randomAlphanumeric = (len) => {
+    return [...Array(len)]
+      .map(i => base[Math.random()*base.length|0])
+      .join('');
+ };
+ 
 
-module.exports = {identityTransformer,log, pipe, notNull, pipe2, isReachable, formatHost, promiseTimeout};
-
+module.exports = {identityTransformer, log, pipe, notNull, pipe2, isReachable, formatHost, promiseTimeout, randomAlphanumeric};
