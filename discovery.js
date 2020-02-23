@@ -1,8 +1,8 @@
 
-const portfinder = require('portfinder');
+const {getPortPromise} = require('portfinder');
 const nodeCleanup = require('node-cleanup');
 const os = require("os");
-const {exposeRemotely, findServicesRemote} = require("./discovery_remote");
+const {exposeRemotely, findServicesRemote, updateServiceActivity, onActivity} = require("./discovery_remote");
 const {exposeLocally, findServicesLocal} = require("./discovery_local");
 const {isReachable, promiseTimeout, formatHost} = require("./helpers");
 const sleep = require('sleep-async')().Promise;
@@ -49,7 +49,7 @@ async function publishService({type, name = null, isUnique = true, host = localH
     txt = {...txt, type};
 
 
-    const service={type, name, host, port, txt};
+    let service={type, name, host, port, txt};
 
     console.log("Publishing", service);
     
@@ -59,6 +59,7 @@ async function publishService({type, name = null, isUnique = true, host = localH
         return () => null;
     }
 
+    service = await _proxyService(service, activeRequests => updateServiceActivity(service.name, activeRequests))
     const unexposeRemote = remote && await exposeRemotely(service);
     const unexposeLocal = local && await exposeLocally(service);
 
@@ -152,4 +153,31 @@ function findServiceOnce(options,timeout=30000) {
 
 
 
-module.exports = { publishService, findServices, findServiceOnce, localHost, findAccumulatedServices };
+module.exports = { publishService, findServices, findServiceOnce, localHost, findAccumulatedServices, onActivity };
+
+const { createProxyMiddleware } = require('http-proxy-middleware');
+const express = require('express');
+async function _proxyService({host, port,...service}, callback) {
+    let activeRequests = 0;
+    
+    const proxiedPort = await getPortPromise({port, stopPort: 65535 })
+    console.log("Proxy port:", proxiedPort,"Original port:", port,"Proxy host:",localHost);
+    const apiProxy = createProxyMiddleware('**', { 
+        target: `http://${host}:${port}`, 
+        onProxyReq: (...args) => {
+            console.log("REQ",new Date());
+            activeRequests++;
+            callback(activeRequests);
+        },
+        onProxyRes: (...args) => {
+            console.log("RES",new Date());
+            activeRequests--;
+            callback(activeRequests);
+        }
+    });
+    
+    const app = express();
+    app.use('**', apiProxy);
+    app.listen(proxiedPort);
+    return {...service, host: localHost, port: proxiedPort};
+}

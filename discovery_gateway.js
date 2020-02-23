@@ -55,7 +55,9 @@ serverSocket.on('connection', socket => {
       })
    });
 
-    
+   socket.on("activity",(name, activeRequests) => {
+      socket.broadcast.emit("activity", name, activeRequests);
+   });
 
 });
 

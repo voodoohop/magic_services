@@ -135,5 +135,13 @@ function _formatRemoteService({txt,...service}) {
     };
 }
 
+function updateServiceActivity(name,activeRequests) {
+    console.log("emitting","activity",name, activeRequests);
+    exposerSocket.emit("activity",name, activeRequests);
+}
 
-module.exports = {exposeRemotely, findServicesRemote};
+function onActivity(callback) {
+    exposerSocket.on("activity", callback);
+}
+
+module.exports = {exposeRemotely, findServicesRemote, updateServiceActivity, onActivity};

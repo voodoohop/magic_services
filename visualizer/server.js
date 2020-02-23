@@ -5,7 +5,7 @@ var express = require('express');
 var server = require('http').createServer();
 const {dirname} = require("path");
 
-const { findAccumulatedServices, localHost} = require("../discovery");
+const { findAccumulatedServices, localHost, onActivity} = require("../discovery");
 
 const {values, keys} = Object;
 
@@ -58,7 +58,7 @@ server.on('listening', function () {
 //   process.exit(0)
 // });
 
-module.exports = ({remote,local, port}) => { 
+module.exports = ({remote, local, port}) => { 
 
   findAccumulatedServices({remote,local}, (servicesObj) => {
     console.log("found services", keys(servicesObj));
@@ -66,9 +66,15 @@ module.exports = ({remote,local, port}) => {
     console.log("Sending",keys(services));
     wss.clients.forEach(function (client) {
       console.log("Refreshing client.");
-      client.send("refresh");
+      client.send(JSON.stringify({type:"refresh"}));
     });
   }, 1000);
 
+  onActivity((name,activeRequests) => {
+    wss.clients.forEach(function (client) {
+      console.log("Refreshing client.");
+      client.send(JSON.stringify({type:"activity", name, activeRequests}));
+    });  
+  });
   server.listen(port);
 };

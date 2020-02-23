@@ -143,6 +143,7 @@ $(function () {
   var socket = new WebSocket('ws://' + location.host + '/');
 
   socket.addEventListener("message", function (e) {
+    console.log({e});
     draw();
   })
 
