@@ -19,8 +19,12 @@
   "homepage": "https://github.com/Pixtunes/magic_services#readme",
   "dependencies": {
     "autossh": "^0.2.0",
+    "commander": "^4.1.1",
+    "express": "^4.13.4",
+    "http-proxy-middleware": "^1.0.0",
     "is-port-reachable": "^3.0.0",
     "is-reachable": "^4.0.0",
+    "jquery": "^2.2.1",
     "network": "^0.4.1",
     "node-cleanup": "^2.1.2",
     "opn": "^6.0.0",
@@ -28,9 +32,6 @@
     "sleep-async": "^1.0.5",
     "socket.io": "^2.3.0",
     "socket.io-client": "^2.3.0",
-    "commander": "^4.1.1",
-    "express": "^4.13.4",
-    "jquery": "^2.2.1",
     "vis": "^4.15.1",
     "ws": "^1.0.1",
     "yargs": "^4.2.0"
