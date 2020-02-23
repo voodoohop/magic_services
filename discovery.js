@@ -171,9 +171,15 @@ async function _proxyService({host, port,...service}, callback) {
         },
         onProxyRes: (...args) => {
             console.log("RES",new Date());
-            activeRequests--;
+            if (activeRequests >0)
+                activeRequests--;
+            callback(activeRequests);
+        },
+        onError: () => {
+            activeRequests = 0;
             callback(activeRequests);
         }
+
     });
     
     const app = express();
