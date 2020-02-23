@@ -34,9 +34,13 @@ console.log("Local host name", localHost);
  * @param  {} serviceDescription.isUnique True if multiple services of the same name are allowed to coexist
  * @param  {} serviceDescription.name The service name. This is not used for discovery
  * @param  {} serviceDescription.type The service type. This is used for discovery.
+ * @param  {} serviceDescription.port The port of the service to publish
+ * @param  {} serviceDescription.host The host of the service to be published. Defaults to local host name.
  * @param  {} serviceDescription.txt Additional metadata to pass in the DNS TXT field
+ * @param  {} serviceDescription.local Whether to use local discovery via multicast DNS / Bonjour
+ * @param  {} serviceDescription.remote Whether to use remote discovery via a remote gateway server
  */
-async function publishService({type, name = null, isUnique = true, host = localHost, port=null, txt={}, local=true, remote=true} ) {
+async function publishService({type, name = null, isUnique = true, host = localHost, port=null, txt={}, local=true, remote=true, activityProxy=false} ) {
     
     local = local && mdnsAvailable;
     host = formatHost(host);
@@ -59,7 +63,10 @@ async function publishService({type, name = null, isUnique = true, host = localH
         return () => null;
     }
 
-    service = await _proxyService(service, activeRequests => updateServiceActivity(service.name, activeRequests))
+
+    if (activityProxy)
+        service = await _proxyService(service, activeRequests => updateServiceActivity(service.name, activeRequests));
+    
     const unexposeRemote = remote && await exposeRemotely(service);
     const unexposeLocal = local && await exposeLocally(service);
 
@@ -85,6 +92,14 @@ async function publishService({type, name = null, isUnique = true, host = localH
     return unpublish;
 }
 
+/**
+ * Find services by type. Searches via multicast DNS / Bonjour and a remote but centralized server by default. Local services with the same name take preference over remote services.
+ * @param  {} opts
+ * @param  {} opts.type The service type (string) to find.
+ * @param  {} opts.local Whether to use local discovery via multicast DNS / Bonjour
+ * @param  {} opts.remote Whether to use remote discovery via a remote gateway server
+ * @param  {} callback The callback is invoked with an object containing the boolean flag available which indicates whether the service went up or down and the service description.
+ */
 async function findServices(opts, callback) {
     
     let {local=true, remote = true} = opts;
@@ -122,6 +137,12 @@ async function findServices(opts, callback) {
     }
 }
 
+/**
+ * Finds services and updates the callback with a debounced list of currently active services
+ * @param  {} opts Same as options of *findservices*
+ * @param  {} callback Called with an object that contains the service names as keys and service details as values
+ * @param  {} debounceTime=3000 Debounce time. So we don't update UIs when services disappear and appear in quick succession.
+ */
 async function findAccumulatedServices(opts, callback, debounceTime=3000) {
 
     const debouncedServicesCallback = debounce(callback, debounceTime);

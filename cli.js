@@ -14,6 +14,7 @@ program
     .option('--launch-visualizer [port]', 'Launch the visualizer service and and open it in the browser.')
     .option('--no-local',"Don't expose or search on local network via multicast DNS / Bonjour.", false)
     .option('--no-remote',"Don't expose or search for remote services.", false)
+    .option('--no-activity-proxy',"Disable proxy service that transmits activity information to service visualizer.", false)
     .outputHelp()
 program.parse(process.argv);
 
@@ -49,7 +50,7 @@ async function exposeService(program) {
             metadata[key] = value;
         });
     }
-    const service = { type, port: parseInt(port), host, txt: metadata, remote: program.remote, local: program.local };
+    const service = { type, port: parseInt(port), host, txt: metadata, remote: program.remote, local: program.local, activityProxy: program.activityProxy };
     console.log("Publishing", service);
     const unpublish = await publishService(service);
     nodeCleanup(unpublish);
