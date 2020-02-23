@@ -4,6 +4,23 @@ const { keys, entries } = Object;
 const BACKGROUND_COLOR = "#222";
 const BORDER_COLOR = "rgba(255,255,255,0.4)";
 const ROOT_NODE = "conn";
+const nodeColors = {
+  background: BACKGROUND_COLOR,
+  border: BORDER_COLOR,
+  hover: {
+    border: "white",
+    background: BACKGROUND_COLOR
+  },
+  highlight: {
+    border: "white",
+    background: BACKGROUND_COLOR      
+  }
+};
+
+const activeNodeColors = {
+  background:"orange",
+  border:"white"
+};
 
 function toTable(obj) {
   if (!obj)
@@ -142,29 +159,33 @@ $(function () {
 
   var socket = new WebSocket('ws://' + location.host + '/');
 
-  socket.addEventListener("message", function (e) {
-    console.log({e});
-    draw();
+  socket.addEventListener("message", function ({data}) {
+    console.log(data);
+    const {type, ...rest} = JSON.parse(data);
+    if (type === "refresh") {
+      draw();
+    }
+    if (type === "activity") {
+      const {name, activeRequests} = rest;
+      const hostNode = nodes.get(name);
+      if (!hostNode)
+        return;
+      const isActive = (activeRequests > 0);
+      console.log(isActive);
+      nodes.update({
+        ...hostNode, 
+        borderWidth: isActive ? 8 :  2,
+        color: isActive ? activeNodeColors : nodeColors
+      });
+    }
   })
 
 })
 
 function _getVisJSOptions() {
-  const nodeColors = {
-    background: BACKGROUND_COLOR,
-    border: BORDER_COLOR,
-    hover: {
-      border: "white",
-      background: BACKGROUND_COLOR
-    },
-    highlight: {
-      border: "white",
-      background: BACKGROUND_COLOR      
-    }
-  };
+
 
   return {
-    hover: true,
     height: $(window).innerHeight() + "px",
     // "physics": {
     //   "barnesHut": {
@@ -192,6 +213,14 @@ function _getVisJSOptions() {
     groups: {
       host: {
         shape: "circle",
+        // font: "14px verdana white",
+        // color: nodeColors,
+        widthConstraint: {
+          minimum: 100
+        }
+      },
+      active_host: {
+        shape: "dot",
         // font: "14px verdana white",
         // color: nodeColors,
         widthConstraint: {
