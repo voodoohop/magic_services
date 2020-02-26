@@ -181,7 +181,7 @@ const express = require('express');
 async function _proxyService({host, port,...service}, callback) {
     let activeRequests = 0;
     
-    const proxiedPort = await getPortPromise({port, stopPort: 65535 })
+    const proxiedPort = await getPortPromise({port: port + 1, stopPort: 65535 })
     console.log("Proxy port:", proxiedPort,"Original port:", port,"Proxy host:",localHost);
     const apiProxy = createProxyMiddleware('**', { 
         target: `http://${host}:${port}`, 
