@@ -1,6 +1,6 @@
 ## Overview
 
-![screenshot](https://i.ibb.co/5X0xKhk/Screen-Shot-2020-02-20-at-2-47-53-AM.png)
+![screenshot](docs/screenshot_visualizer.png?raw=true)
 
 This repository implements a lightweight, realtime nodejs based service discovery framework. It allows publishing service availability both through the local network and via a remote server. Local services are automatically made available remotely via Reverse SSH. 
 
