@@ -14,13 +14,13 @@ Usage: cli [options]
 Options:
   --expose <name@host:port>     Expose local service
   --expose-metadata <metadata>  Metadata in the form.
-  --launch-visualizer [port]    Launch the visualizer service and and open it in the
-                                browser.
-  --no-local                    Don't expose or search on local network via multicast DNS
-                                / Bonjour.
+  --launch-visualizer [port]    Launch the visualizer service and and open it in the browser.
+  --no-local                    Don't expose or search on local network via multicast DNS / Bonjour.
   --no-remote                   Don't expose or search for remote services.
-  --no-activity-proxy           Disable proxy service that transmits activity information
-                                to service visualizer.
+  --no-activity-proxy           Disable proxy service that transmits activity information to service visualizer.
+  --remote-host [hostname]      Reverse SSH proxy host. (default: null)
+  --remote-user [username]      Reverse SSH proxy user. (default: null)
+  --keyfile [path]              Reverse SSH keyfile path. (default: null)
   -h, --help                    output usage information
 ```
 
