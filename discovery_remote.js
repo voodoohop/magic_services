@@ -23,9 +23,14 @@ const REVERSE_SSH_KEYFILE = path.join(homedir(), "credentials", "ec2_model_super
 const exposerSocket = io(`http://${GATEWAY_HOST}:${GATEWAY_PORT}`);
 
 
-async function reverseSSH(localHost, localPort) {
+async function reverseSSH(localHost, localPort, {keyfile = null, host = null, user = null}) {
 
-    if (!existsSync(REVERSE_SSH_KEYFILE)) {
+    keyfile = keyfile || REVERSE_SSH_KEYFILE;
+    host = host || REVERSE_SSH_HOST;
+    user = user || REVERSE_SSH_USERNAME;
+
+    
+    if (!existsSync(keyfile)) {
         console.error("Fatal, no key certificate found in order to start Reverse SSH tunnels.");
         console.log("This is only required to expose services. We can continue for service discovery.");
         return {};
@@ -36,12 +41,12 @@ async function reverseSSH(localHost, localPort) {
 
     return await new Promise((resolve, reject) => {
         const autoSSHClient = autossh({
-            host: REVERSE_SSH_HOST,
-            username: REVERSE_SSH_USERNAME,
+            host: host,
+            username: user,
             localPort,
             localHost,
             remotePort,
-            privateKey: REVERSE_SSH_KEYFILE,
+            privateKey: keyfile,
             reverse: true
         });
 
@@ -50,15 +55,15 @@ async function reverseSSH(localHost, localPort) {
             .on('connect', connection => {
                 console.log('Tunnel established on port ' + connection.localPort);
                 console.log('pid: ' + connection.pid);
-                resolve({ remotePort: connection.remotePort, host: REVERSE_SSH_HOST, dispose: autoSSHClient.kill });
+                resolve({ remotePort: connection.remotePort, host: host, dispose: autoSSHClient.kill });
             });
         nodeCleanup(() => autoSSHClient.kill());
     });
 }
 
-async function exposeRemotely(service) {
+async function exposeRemotely(service, remoteConfig) {
 
-    const { remotePort, host, dispose:disposeReverseSSH } = await reverseSSH(service.host, service.port, exposerSocket);
+    const { remotePort, host, dispose:disposeReverseSSH } = await reverseSSH(service.host, service.port, exposerSocket, remoteConfig);
 
     if (!host)
         throw "Couldn't create Reverse SSH connection. Probably because of missing keyfile.";

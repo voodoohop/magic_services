@@ -15,6 +15,9 @@ program
     .option('--no-local',"Don't expose or search on local network via multicast DNS / Bonjour.", false)
     .option('--no-remote',"Don't expose or search for remote services.", false)
     .option('--no-activity-proxy',"Disable proxy service that transmits activity information to service visualizer.", false)
+    .option('--remote-host [hostname]', 'Reverse SSH proxy host.', null)
+    .option('--remote-user [username]', 'Reverse SSH proxy user.', null)
+    .option('--keyfile [path]', 'Reverse SSH keyfile path.', null)
     .outputHelp()
 program.parse(process.argv);
 
@@ -50,7 +53,21 @@ async function exposeService(program) {
             metadata[key] = value;
         });
     }
-    const service = { type, port: parseInt(port), host, txt: metadata, remote: program.remote, local: program.local, activityProxy: program.activityProxy };
+    const service = { 
+        type, 
+        port: parseInt(port), 
+        host, 
+        txt: metadata, 
+        remote: program.remote, 
+        local: program.local, 
+        activityProxy: program.activityProxy,
+        remoteConfig: {
+            host: program.remoteHost,
+            user: program.remoteUser,
+            keyfile: program.keyfile
+        }
+    };
+  
     console.log("Publishing", service);
     const unpublish = await publishService(service);
     nodeCleanup(unpublish);

@@ -40,7 +40,19 @@ console.log("Local host name", localHost);
  * @param  {} serviceDescription.local Whether to use local discovery via multicast DNS / Bonjour
  * @param  {} serviceDescription.remote Whether to use remote discovery via a remote gateway server
  */
-async function publishService({type, name = null, isUnique = true, host = localHost, port=null, txt={}, local=true, remote=true, activityProxy=false} ) {
+async function publishService(
+    {
+        type, 
+        name = null, 
+        isUnique = true, 
+        host = localHost, 
+        port=null, 
+        txt={}, 
+        local=true, 
+        remote=true, 
+        activityProxy=false,
+        remoteConfig={}
+    } ) {
     
     local = local && mdnsAvailable;
     host = formatHost(host);
@@ -67,7 +79,7 @@ async function publishService({type, name = null, isUnique = true, host = localH
     if (activityProxy)
         service = await _proxyService(service, activeRequests => updateServiceActivity(service.name, activeRequests));
     
-    const unexposeRemote = remote && await exposeRemotely(service);
+    const unexposeRemote = remote && await exposeRemotely(service, remoteConfig);
     const unexposeLocal = local && await exposeLocally(service);
 
     const unpublish = () => {
