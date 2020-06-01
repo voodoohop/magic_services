@@ -55,6 +55,7 @@ async function reverseSSH(localHost, localPort, {keyfile = null, host = null, us
             .on('connect', connection => {
                 console.log('Tunnel established on port ' + connection.localPort);
                 console.log('pid: ' + connection.pid);
+                console.log('Autossh exec string: ' + connection.execString);
                 resolve({ remotePort: connection.remotePort, host: host, dispose: autoSSHClient.kill });
             });
         nodeCleanup(() => autoSSHClient.kill());
