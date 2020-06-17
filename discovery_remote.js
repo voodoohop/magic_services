@@ -40,7 +40,7 @@ async function reverseSSH(localHost, localPort, {keyfile = null, host = null, us
     const remotePort = await new Promise(resolve => exposerSocket.emit("getFreePort", localPort, resolve));
 
     return await new Promise((resolve, reject) => {
-        const autoSSHClient = autossh({
+        const opts = {
             host: host,
             username: user,
             localPort,
@@ -48,10 +48,15 @@ async function reverseSSH(localHost, localPort, {keyfile = null, host = null, us
             remotePort,
             privateKey: keyfile,
             reverse: true
-        });
+        };
+        console.log("Starting autossh with options", opts);
+        const autoSSHClient = autossh(opts);
 
         autoSSHClient
-            .on('error', reject)
+            .on('error', (...args) => {
+                console.log("autossh error",...args)
+                reject(...args);
+            })
             .on('connect', connection => {
                 console.log('Tunnel established on port ' + connection.localPort);
                 console.log('pid: ' + connection.pid);
