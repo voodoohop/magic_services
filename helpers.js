@@ -30,14 +30,16 @@ async function isReachable(service, max_timeout_seconds = DEFAULT_MAX_REACHABLE_
     let timeout_secs = 2;
     
     do {
-        if (await isPortReachable(service.port, { host: service.host , timeout: timeout_secs * 1000 }))
+        if (await isPortReachable(service.port, { host: service.host , timeout: timeout_secs * 1000 })) {
+            console.log("Port was reachable after", timeout_secs)
             return true;
+        }
         await sleep.sleep(timeout_secs * 1000);
         timeout_secs *= 2;
         console.log("Service", service.name,{host:service.host, port: service.port }, "not reachable. Increased timeout to",timeout_secs);
     
     } while (timeout_secs < max_timeout_seconds);
-
+    console.log("Port was unreachable");
     return false;
 }
 
