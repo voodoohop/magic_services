@@ -79,7 +79,9 @@ async function publishService(
     if (activityProxy)
         service = await _proxyService(service, activeRequests => updateServiceActivity(service.name, activeRequests));
     
+    console.log("Exposing remotely...");
     const unexposeRemote = remote && await exposeRemotely(service, remoteConfig);
+    console.log("Exposing local...");
     const unexposeLocal = local && await exposeLocally(service);
 
     const unpublish = () => {

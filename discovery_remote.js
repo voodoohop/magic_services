@@ -69,6 +69,7 @@ async function reverseSSH(localHost, localPort, {keyfile = null, host = null, us
 
 async function exposeRemotely(service, remoteConfig) {
 
+    console.log("Starting reverse SSH");
     const { remotePort, host, dispose:disposeReverseSSH } = await reverseSSH(service.host, service.port, exposerSocket, remoteConfig);
 
     if (!host)
