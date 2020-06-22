@@ -103,12 +103,12 @@ function findServicesRemote(opts, callback) {
     console.log("finding remote services of type", type);
     
     const publishService = async service => {
-        console.log("Received remote service", service);
+        // console.log("Received remote service", service);
         if (type && !(service.txt.type === type)) {
-            console.log("But types didn't match. Skipping. Expected:", type);
+            // console.log("But types didn't match. Skipping. Expected:", type);
             return;            
         }
-        console.log("Service was of correct type.", type);
+        console.log("Found service of correct type.", type);
         if (!await isReachable(service)) {
             console.error("service was not reachable. ignoring.", service);
             return;
