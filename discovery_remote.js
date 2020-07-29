@@ -29,15 +29,16 @@ async function reverseSSH(localHost, localPort, {keyfile = null, host = null, us
     host = host || REVERSE_SSH_HOST;
     user = user || REVERSE_SSH_USERNAME;
 
-    
+    console.log(`Checking if ${keyfile} exists.`);
     if (!existsSync(keyfile)) {
         console.error("Fatal, no key certificate found in order to start Reverse SSH tunnels.");
         console.log("This is only required to expose services. We can continue for service discovery.");
         return {};
     }
+    console.log("Found keyfile. Getting free remote port...");
 
-    
     const remotePort = await new Promise(resolve => exposerSocket.emit("getFreePort", localPort, resolve));
+    console.log("Got remote port",remotePort,". Starting autossh.");
 
     return await new Promise((resolve, reject) => {
         const opts = {
