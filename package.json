@@ -36,9 +36,6 @@
     "ws": "^1.0.1",
     "yargs": "^4.2.0"
   },
-  "optionalDependencies": {
-    "mdns": "^2.5.1"
-  },
   "bin": {
     "expose": "./bin/expose"
   }

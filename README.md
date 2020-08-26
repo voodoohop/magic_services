@@ -15,8 +15,6 @@ Options:
   --expose <name@host:port>     Expose local service
   --expose-metadata <metadata>  Metadata in the form.
   --launch-visualizer [port]    Launch the visualizer service and and open it in the browser.
-  --no-local                    Don't expose or search on local network via multicast DNS / Bonjour.
-  --no-remote                   Don't expose or search for remote services.
   --no-activity-proxy           Disable proxy service that transmits activity information to service visualizer.
   --remote-host [hostname]      Reverse SSH proxy host. (default: null)
   --remote-user [username]      Reverse SSH proxy user. (default: null)
@@ -44,7 +42,7 @@ Options:
 <a name="publishService"></a>
 
 ## publishService(serviceDescription)
-Find a free port and set up automatic broadcasting via bonjour
+Find a free port and set up automatic broadcasting 
 
 **Kind**: global function  
 
@@ -57,8 +55,6 @@ Find a free port and set up automatic broadcasting via bonjour
 | serviceDescription.port |  | The port of the service to publish |
 | serviceDescription.host |  | The host of the service to be published. Defaults to local host name. |
 | serviceDescription.txt |  | Additional metadata to pass in the DNS TXT field |
-| serviceDescription.local |  | Whether to use local discovery via multicast DNS / Bonjour |
-| serviceDescription.remote |  | Whether to use remote discovery via a remote gateway server |
 
 <a name="findServices"></a>
 
@@ -71,8 +67,6 @@ Find services by type. Searches via multicast DNS / Bonjour and a remote but cen
 | --- | --- |
 | opts |  |
 | opts.type | The service type (string) to find. |
-| opts.local | Whether to use local discovery via multicast DNS / Bonjour |
-| opts.remote | Whether to use remote discovery via a remote gateway server |
 | callback | The callback is invoked with an object containing the boolean flag available which indicates whether the service went up or down and the service description. |
 
 <a name="findAccumulatedServices"></a>

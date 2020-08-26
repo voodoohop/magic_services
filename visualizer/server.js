@@ -58,9 +58,9 @@ server.on('listening', function () {
 //   process.exit(0)
 // });
 
-module.exports = ({remote, local, port}) => { 
+module.exports = port => { 
 
-  findAccumulatedServices({remote,local}, (servicesObj) => {
+  findAccumulatedServices({},(servicesObj) => {
     console.log("found services", keys(servicesObj));
     services = servicesObj;
     console.log("Sending",keys(services));

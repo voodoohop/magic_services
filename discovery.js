@@ -3,9 +3,7 @@ const {getPortPromise} = require('portfinder');
 const nodeCleanup = require('node-cleanup');
 const os = require("os");
 const {exposeRemotely, findServicesRemote, updateServiceActivity, onActivity} = require("./discovery_remote");
-const {exposeLocally, findServicesLocal} = require("./discovery_local");
 const {isReachable, promiseTimeout, formatHost} = require("./helpers");
-const sleep = require('sleep-async')().Promise;
 const {debounce} = require("lodash");
 
 const {keys} = Object;
@@ -37,8 +35,6 @@ console.log("Local host name", localHost);
  * @param  {} serviceDescription.port The port of the service to publish
  * @param  {} serviceDescription.host The host of the service to be published. Defaults to local host name.
  * @param  {} serviceDescription.txt Additional metadata to pass in the DNS TXT field
- * @param  {} serviceDescription.local Whether to use local discovery via multicast DNS / Bonjour
- * @param  {} serviceDescription.remote Whether to use remote discovery via a remote gateway server
  */
 async function publishService(
     {
@@ -48,13 +44,10 @@ async function publishService(
         host = localHost, 
         port=null, 
         txt={}, 
-        local=true, 
-        remote=true, 
         activityProxy=false,
         remoteConfig={}
     } ) {
     
-    local = local && mdnsAvailable;
     host = formatHost(host);
 
     if (name === null)
@@ -80,14 +73,11 @@ async function publishService(
         service = await _proxyService(service, activeRequests => updateServiceActivity(service.name, activeRequests));
     
     console.log("Exposing remotely...");
-    const unexposeRemote = remote && await exposeRemotely(service, remoteConfig);
-    console.log("Exposing local...");
-    const unexposeLocal = local && await exposeLocally(service);
-
+    const unexposeRemote = await exposeRemotely(service, remoteConfig);
+   
     const unpublish = () => {
         console.log("Unpublishing service", name);
-        local && unexposeLocal();
-        remote && unexposeRemote();
+        unexposeRemote();
         clearInterval(intervalHandle);
     }
 
@@ -107,48 +97,26 @@ async function publishService(
 }
 
 /**
- * Find services by type. Searches via multicast DNS / Bonjour and a remote but centralized server by default. Local services with the same name take preference over remote services.
+ * Find services by type. Searches via  server by default. 
  * @param  {} opts
  * @param  {} opts.type The service type (string) to find.
- * @param  {} opts.local Whether to use local discovery via multicast DNS / Bonjour
- * @param  {} opts.remote Whether to use remote discovery via a remote gateway server
  * @param  {} callback The callback is invoked with an object containing the boolean flag available which indicates whether the service went up or down and the service description.
  */
 async function findServices(opts, callback) {
-    
-    let {local=true, remote = true} = opts;
 
-    local = local && mdnsAvailable;
 
-    let localServices = {};
     let remoteServices = {};
 
-    
-    const stopLocal = local && findServicesLocal(opts, ({available, service}) => {
-        if (available)
-            localServices[service.name] = service;
-        else
-            delete localServices[service.name];
-        callback({available, service}, {...remoteServices, ...localServices});
-    });
-    
-    // Give local services a small headstart. they will override remote services of the same name
-    await sleep.sleep(1000);
-
-    const stopRemote = remote && findServicesRemote(opts, ({available, service}) => {
+    const stopRemote = findServicesRemote(opts, ({available, service}) => {
         if (available)
             remoteServices[service.name] = service;
         else
             delete remoteServices[service.name];
         
-        if (!localServices[service.name])
-            callback({available, service}, {...remoteServices, ...localServices});
+        callback({available, service}, remoteServices);
     });
 
-    return () => {
-        stopRemote && stopRemote();
-        stopLocal && stopLocal();
-    }
+    return stopRemote;
 }
 
 /**

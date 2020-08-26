@@ -12,8 +12,6 @@ program
     .option('--expose <name@host:port>', 'Expose local service')
     .option('--expose-metadata <metadata>', 'Metadata in the form.')
     .option('--launch-visualizer [port]', 'Launch the visualizer service and and open it in the browser.')
-    .option('--no-local',"Don't expose or search on local network via multicast DNS / Bonjour.", false)
-    .option('--no-remote',"Don't expose or search for remote services.", false)
     .option('--no-activity-proxy',"Disable proxy service that transmits activity information to service visualizer.", false)
     .option('--remote-host [hostname]', 'Reverse SSH proxy host.', null)
     .option('--remote-user [username]', 'Reverse SSH proxy user.', null)
@@ -31,13 +29,13 @@ if (program.expose) {
 }
     
 if (program.launchVisualizer) {
-    launchVisualizer({remote: program.remote, local: program.local, port:parseInt(program.launchVisualizer)});
+    launchVisualizer(parseInt(program.launchVisualizer));
 }
 
 
-async function launchVisualizer({remote,local,port}) {
+async function launchVisualizer(port) {
    console.log("Launching service visualizer on port", port);
-   visServer({remote,local,port});
+   visServer(port);
    await sleep.sleep(1000);
    openBrowser(`http://localhost:${port}`);
 }
@@ -58,8 +56,6 @@ async function exposeService(program) {
         port: parseInt(port), 
         host, 
         txt: metadata, 
-        remote: program.remote, 
-        local: program.local, 
         activityProxy: program.activityProxy,
         remoteConfig: {
             host: program.remoteHost,
