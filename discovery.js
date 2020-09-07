@@ -53,7 +53,7 @@ async function publishService(
     if (name === null)
         name = `${type}`;
     if (isUnique)
-        name = `${name}_${process.pid}`;
+        name = `${name}_${process.pid}_${host}_${Math.floor(Math.random()*1000)}`;
 
     txt = {...txt, type};
 
