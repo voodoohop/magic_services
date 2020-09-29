@@ -100,7 +100,7 @@ async function exposeRemotely(service, remoteConfig) {
 
 
 function findServicesRemote(opts, callback) {
-    const {type} = opts;
+    const {type, noVerify} = opts;
     console.log("finding remote services of type", type);
     
     const publishService = async service => {
@@ -110,7 +110,7 @@ function findServicesRemote(opts, callback) {
             return;            
         }
         console.log("Found service of correct type.", type);
-        if (!await isReachable(service)) {
+        if (!noVerify && !await isReachable(service)) {
             console.error("service was not reachable. ignoring.", service);
             return;
         }
