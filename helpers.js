@@ -1,5 +1,5 @@
 
-const isPortReachable = require('is-port-reachable');
+const is_reachable = require('is-reachable');
 const portfinder = require('portfinder');
 const sleep = require('sleep-async')().Promise;
 const os = require("os");
@@ -26,11 +26,11 @@ const objectEqual = (o1, o2) => JSON.stringify(o1) == JSON.stringify(o2);
 const DEFAULT_MAX_REACHABLE_TIMEOUT = 90;
 
 async function isReachable(service, max_timeout_seconds = DEFAULT_MAX_REACHABLE_TIMEOUT) {
-    console.log("Checking if port reachable.");
+    console.log("Checking if port reachable.",service.host,service.port);
     let timeout_secs = 2;
     
     do {
-        if (await isPortReachable(service.port, { host: service.host , timeout: timeout_secs * 1000 })) {
+        if (await is_reachable(`${service.host}:${service.port}`,{ timeout: timeout_secs * 1000 })) {
             console.log("Port was reachable after", timeout_secs)
             return true;
         }
