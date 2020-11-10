@@ -11,11 +11,13 @@ const PORT = 4321;
 const serverSocket = io.listen(PORT);
 
 let services = {};
-
+let portOffset = 0;
 serverSocket.on('connection', socket => {
 
     console.log("Connection from client", socket.id);
-    socket.on("getFreePort", async (localPort, callback) => callback(await getPortPromise({port: localPort, stopPort: 65535 })));
+
+    // add port offset because of timing conflicts
+    socket.on("getFreePort", async (localPort, callback) => callback(await getPortPromise({port: localPort + (portOffset += 5), stopPort: 65535 })));
         
     socket.on("publishService", async serviceDescription => {
          services[serviceDescription.name] = {service: serviceDescription, socket};
