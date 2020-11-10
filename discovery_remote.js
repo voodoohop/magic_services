@@ -122,9 +122,9 @@ function findServicesRemote(opts, callback) {
     };
 
     const unpublishService = service => {
-        console.log("got unpublish service",service);
+        // console.log("got unpublish service",service);
         if (type && !(service.txt.type === type)) {
-            console.log("But types didn't match. Skipping.");
+            // console.log("But types didn't match. Skipping.");
             return;
         }
         callback({available: false, service: _formatRemoteService(service)})
