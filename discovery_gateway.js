@@ -13,13 +13,15 @@ const serverSocket = io.listen(PORT);
 let services = {};
 let portOffset = 0;
 serverSocket.on('connection', socket => {
+    const ipAddress = socket.handshake.headers["x-forwarded-for"].split(",")[0];
 
-    console.log("Connection from client", socket.id);
+    console.log("Connection from client", socket.id, ipAddress);
 
     // add port offset because of timing conflicts
     socket.on("getFreePort", async (localPort, callback) => callback(await getPortPromise({port: localPort + (portOffset += 5), stopPort: 65535 })));
         
     socket.on("publishService", async serviceDescription => {
+         serviceDescription = {...serviceDescription, ipAddress}
          services[serviceDescription.name] = {service: serviceDescription, socket};
          console.log("Received service publish", serviceDescription);
          if (! await isReachable(serviceDescription)) {
