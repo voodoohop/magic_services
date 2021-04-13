@@ -73,20 +73,20 @@ $(function () {
       })
 
       services.forEach(function (item) {
-
-        let { txt = {}, host: host_id } = item;
+        console.error(item);
+        let { txt = {}, ipAddress: host_id } = item;
 
           const remote_host = txt.originHost ? 
           {
-            id: txt.originHost,
+            id: host_id,
             label: txt.originHost.split(".")[0],
             group: "host"
           } 
           : null;
-
+          console.log("itemhost",item)
           var host = {
             id: host_id,
-            label: item.host.split(".")[0],
+            label: txt.type,
             group: "host"
           }
 
@@ -97,7 +97,7 @@ $(function () {
 
           if (!nodes.get(host.id)) {
             nodes.add(host);
-  
+       
             edges.add({
               from: ROOT_NODE,
               to: host_id,
@@ -110,6 +110,7 @@ $(function () {
           if (remote_host) {
             if (!nodes.get(remote_host.id)) {
               nodes.add(remote_host);
+             
               edges.add({
                 from: remote_host.id,
                 to: host_id,
@@ -141,6 +142,7 @@ $(function () {
 
         if (!nodes.get(app_id)) {
           nodes.add(app);
+          console.log("adding edge",remote_host.id,host_id)
           edges.add({
             from: remote_host ? remote_host.id : host_id,
             to: app_id,
