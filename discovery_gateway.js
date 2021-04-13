@@ -13,7 +13,9 @@ const serverSocket = io.listen(PORT);
 let services = {};
 let portOffset = 0;
 serverSocket.on('connection', socket => {
-    const ipAddress = socket.handshake.headers["x-forwarded-for"].split(",")[0];
+
+
+    const ipAddress = socket.handshake.headers['x-forwarded-for'] || socket.conn.remoteAddress.split(":")[3];
 
     console.log("Connection from client", socket.id, ipAddress);
 
