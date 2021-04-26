@@ -49,9 +49,7 @@ function formatHost(host) {
         host = os.hostname();
     }
     host = host.replace(/\.$/, "").replace(".fritz.box", ".local");
-    if (!host.includes(".")) {
-        host = host + ".local";
-    }
+
     return host;
 }
 
