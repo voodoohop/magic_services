@@ -48,7 +48,7 @@ async function publishService(
         remoteConfig={}
     } ) {
     
-    host = formatHost(host);
+
 
     if (name === null)
         name = `${type}`;
@@ -60,7 +60,7 @@ async function publishService(
 
     let service={type, name, host, port, txt};
 
-    console.log("Publishing", service);
+
     
     // 10 minute timeout in case service takes a long time to start up
     if (! await isReachable(service, 60*10)) {
@@ -68,7 +68,9 @@ async function publishService(
         return () => null;
     }
 
-
+    console.log("Publishing", service);
+    service.host = formatHost(service.host);
+    
     if (activityProxy)
         service = await _proxyService(service, activeRequests => updateServiceActivity(service.name, activeRequests));
     
