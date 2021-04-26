@@ -69,10 +69,9 @@ async function publishService(
     }
 
     console.log("Publishing", service);
-    service.host = formatHost(service.host);
-    
+
     if (activityProxy)
-        service = await _proxyService(service, activeRequests => updateServiceActivity(service.name, activeRequests));
+        service = await _proxyService({...service, host: formatHost(service.host)}, activeRequests => updateServiceActivity(service.name, activeRequests));
     
     console.log("Exposing remotely...");
     const unexposeRemote = await exposeRemotely(service, remoteConfig);
