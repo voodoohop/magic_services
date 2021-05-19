@@ -11,10 +11,10 @@ const {isReachable} = require("./helpers");
 
 const {values, keys} = Object;
 
-const GATEWAY_HOST = "ec2-bakerman";
+const GATEWAY_HOST = "bakerwoman.ml.pixtunes.io";
 const GATEWAY_PORT = 4321;
 
-const REVERSE_SSH_HOST = "ec2-bakerman";
+const REVERSE_SSH_HOST = "bakerwoman.ml.pixtunes.io";
 const REVERSE_SSH_USERNAME = "ubuntu";
 const REVERSE_SSH_KEYFILE = path.join(homedir(), "credentials", "ec2_model_supervisor_key.pem");
 
